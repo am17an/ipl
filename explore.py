@@ -229,6 +229,27 @@ def create_features_from_scratch(deliveries_df, cache_file):
                     average_balls_faced_at_venue = venue_matches.apply(lambda x: x['batting_stats'].get('balls', 0), axis=1).mean() if len(venue_matches) > 0 else average_balls_faced
                     average_balls_bowled_at_venue = venue_matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).mean() if len(venue_matches) > 0 else average_balls_bowled
 
+                    # Calculate venue-specific batting and bowling averages
+                    venue_batting = venue_matches[venue_matches.apply(lambda x: x['batting_stats'].get('balls', 0) > 0, axis=1)]
+                    venue_bowling = venue_matches[venue_matches.apply(lambda x: x['bowling_stats'].get('balls', 0) > 0, axis=1)]
+                    
+                    # Calculate opposition-specific batting and bowling averages
+                    opposition_batting = opposition_matches[opposition_matches.apply(lambda x: x['batting_stats'].get('balls', 0) > 0, axis=1)]
+                    opposition_bowling = opposition_matches[opposition_matches.apply(lambda x: x['bowling_stats'].get('balls', 0) > 0, axis=1)]
+                    
+                    # Calculate venue-opposition interaction features
+                    if current_venue is not None and current_opposition is not None:
+                        venue_opposition_data = past_matches[
+                            (past_matches['venue'] == current_venue) & 
+                            (past_matches['opposition'] == current_opposition)
+                        ]
+                    else:
+                        venue_opposition_data = pd.DataFrame()
+
+                    # Calculate recent venue and opposition performance
+                    recent_venue = venue_matches.tail(5)
+                    recent_opposition = opposition_matches.tail(5)
+
                     # Calculate strike rates and economy rate
                     def calculate_batting_strike_rate(matches):
                         if len(matches) == 0:
@@ -281,10 +302,16 @@ def create_features_from_scratch(deliveries_df, cache_file):
                                 (pd.to_datetime(player_df['date']) < current_date)
                             ]
                             if len(historical_match_players) > 0:
+                                # Calculate ranks for all players in this match
                                 match_ranks = historical_match_players['total_score'].rank(ascending=False, method='min').astype(int)
-                                player_rank = match_ranks[historical_match_players['player'] == player].iloc[0] if player in historical_match_players['player'].values else 12
-                                past_match_ranks.append(player_rank)
+                                
+                                # Get the player's rank if they played in this match
+                                player_match_data = historical_match_players[historical_match_players['player'] == player]
+                                if len(player_match_data) > 0:
+                                    player_rank = match_ranks[historical_match_players['player'] == player].iloc[0]
+                                    past_match_ranks.append(player_rank)
                     
+                    # Calculate average rank and top 11 count
                     features = {
                         'player': player,
                         'match_id': current_match['match_id'].iloc[0],
@@ -293,9 +320,9 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         'team': current_match['team'].iloc[0],
                         'opposition': current_match['opposition'].iloc[0],
                         'venue': current_venue,
-                        'total_score': current_match['total_score'].iloc[0],  # This is the target variable
-                        'batting_score': current_match['batting_score'].iloc[0],  # This is the target variable
-                        'bowling_score': current_match['bowling_score'].iloc[0],  # This is the target variable
+                        'total_score': current_match['total_score'].iloc[0],
+                        'batting_score': current_match['batting_score'].iloc[0],
+                        'bowling_score': current_match['bowling_score'].iloc[0],
                         # Basic features
                         'avg_score': past_matches['total_score'].mean(),
                         'weighted_avg_score': weighted_avg_score,
@@ -307,11 +334,25 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         'venue_std_score': venue_std_score,
                         'venue_recent_score': venue_recent_score,
                         'num_venue_matches': len(venue_matches),
+                        'venue_batting_avg': venue_batting['batting_score'].mean() if len(venue_batting) > 0 else batting_avg,
+                        'venue_bowling_avg': venue_bowling['bowling_score'].mean() if len(venue_bowling) > 0 else bowling_avg,
                         
                         # Opposition-specific features
                         'opposition_avg_score': opposition_avg_score,
                         'opposition_std_score': opposition_std_score,
                         'num_opposition_matches': len(opposition_matches),
+                        'opposition_batting_avg': opposition_batting['batting_score'].mean() if len(opposition_batting) > 0 else batting_avg,
+                        'opposition_bowling_avg': opposition_bowling['bowling_score'].mean() if len(opposition_bowling) > 0 else bowling_avg,
+                        
+                        # Venue-opposition interaction features
+                        'venue_opposition_avg': venue_opposition_data['total_score'].mean() if len(venue_opposition_data) > 0 else past_matches['total_score'].mean(),
+                        'venue_opposition_std': venue_opposition_data['total_score'].std() if len(venue_opposition_data) > 1 else past_matches['total_score'].std(),
+                        
+                        # Recent venue and opposition performance
+                        'recent_venue_avg': recent_venue['total_score'].mean() if len(recent_venue) > 0 else venue_avg_score,
+                        'recent_venue_std': recent_venue['total_score'].std() if len(recent_venue) > 1 else venue_std_score,
+                        'recent_opposition_avg': recent_opposition['total_score'].mean() if len(recent_opposition) > 0 else opposition_avg_score,
+                        'recent_opposition_std': recent_opposition['total_score'].std() if len(recent_opposition) > 1 else opposition_std_score,
                         
                         # Innings-specific features
                         'avg_1st_innings_bat_score': avg_1st_innings_bat_score,
@@ -336,10 +377,8 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         'recent_bowling_avg': recent_bowling_avg,
                         'average_balls_faced': average_balls_faced,
                         'average_balls_bowled': average_balls_bowled,
-
                         'average_balls_faced_at_venue': average_balls_faced_at_venue,
                         'average_balls_bowled_at_venue': average_balls_bowled_at_venue,
-
                         'strike_rate_batting': strike_rate_batting,
                         'strike_rate_bowling': strike_rate_bowling,
                         'economy_rate_bowling': economy_rate_bowling,
@@ -475,18 +514,9 @@ def main():
         match_players = features_df[features_df['match_id'] == match['match_id']]['player'].unique()
         
         # Prepare features for all players in this match
-        numeric_features = [
-            'avg_score', 'weighted_avg_score', 'num_matches', 'recent_score', 
-            'venue_avg_score', 'venue_std_score', 'venue_recent_score', 'num_venue_matches',
-            'opposition_avg_score', 'opposition_std_score', 'num_opposition_matches',
-            'avg_1st_innings_bat_score', 'avg_2nd_innings_bat_score', 'avg_1st_innings_bowl_score', 'avg_2nd_innings_bowl_score',
-            'recent_5_avg', 'recent_5_std', 'recent_10_avg', 'recent_10_std',
-            'recent_20_avg', 'recent_20_std', 'batting_avg', 'bowling_avg',
-            'batting_matches', 'bowling_matches', 'recent_batting_avg', 'recent_bowling_avg',
-            'score_std', 'recent_score_std', 'form_trend', 'avg_days_between_matches'
-        ]
-        categorical_features = ['team', 'opposition', 'venue', 'player']
-        
+        numeric_features = get_numeric_features()
+        categorical_features = get_categorical_features()
+
         # Filter out any numeric features that don't exist
         numeric_features = [col for col in numeric_features if col in features_df.columns]
         
