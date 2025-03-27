@@ -8,7 +8,7 @@ from sklearn.neural_network import MLPRegressor
 import pickle
 import os
 from explore import create_player_dataset, create_features_and_train_test_split
-from feature_utils import get_numeric_features, get_categorical_features, calculate_player_features
+from feature_utils import get_numeric_features, get_categorical_features
 import xgboost as xgb
 
 def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, prediction_type):
@@ -115,7 +115,7 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
     rf_model.fit(X_train, y_train_clamped, sample_weight=weights)
     
     # Train MLP model with task-specific architecture
-    mlp_hidden = (100, 50)  # Larger network for batting
+    mlp_hidden = (50, 50)  # Larger network for batting
     mlp_alpha = 0.001  # L2 regularization
     
     mlp_model = MLPRegressor(
@@ -149,25 +149,10 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
     mlp_test_pred = pd.Series(mlp_test_pred).clip(lower=lower_bound, upper=upper_bound)
     
     # Optimize ensemble weights using validation set
-    best_r2 = float('-inf')
-    best_weights = {'xgb': 0.33, 'rf': 0.33, 'mlp': 0.34}  # Default to equal weights
+    # Use fair weighting scheme instead of R²-based optimization
+    best_weights = {'xgb': 0.33, 'rf': 0.33, 'mlp': 0.33}  # Equal weights for all models
     
-    # Try different weight combinations
-    for xgb_weight in np.arange(0, 1.1, 0.1):
-        for rf_weight in np.arange(0, 1.1 - xgb_weight, 0.1):
-            mlp_weight = 1 - xgb_weight - rf_weight
-            if mlp_weight >= 0:  # Ensure weights sum to 1
-                ensemble_val_pred = (
-                    xgb_test_pred * xgb_weight + 
-                    rf_test_pred * rf_weight +
-                    mlp_test_pred * mlp_weight
-                )
-                current_r2 = r2_score(y_test_clamped, ensemble_val_pred)
-                if current_r2 > best_r2:
-                    best_r2 = current_r2
-                    best_weights = {'xgb': xgb_weight, 'rf': rf_weight, 'mlp': mlp_weight}
-    
-    # Calculate ensemble predictions using optimized weights
+    # Calculate ensemble predictions using fair weights
     ensemble_train_pred = (
         xgb_train_pred * best_weights['xgb'] + 
         rf_train_pred * best_weights['rf'] +
@@ -267,7 +252,7 @@ def main():
     
     # Get the last 10 matches for validation
     unique_matches = features_df['match_id'].unique()
-    last_10_match_ids = unique_matches[-2:]  # Get last 10 unique match IDs
+    last_10_match_ids = unique_matches[-1:]  # Get last 10 unique match IDs
     validation_matches = features_df[features_df['match_id'].isin(last_10_match_ids)]
     train_data = features_df[~features_df['match_id'].isin(last_10_match_ids)]
     
@@ -286,7 +271,7 @@ def main():
     
     # Prepare features for training and validation
     numeric_features = get_numeric_features()
-    categorical_features = ['team', 'opposition', 'venue', 'player']
+    categorical_features = get_categorical_features()
     
     # Filter out any numeric features that don't exist
     numeric_features = [col for col in numeric_features if col in features_df.columns]

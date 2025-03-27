@@ -10,7 +10,7 @@ from sklearn.impute import SimpleImputer
 import kagglehub
 from kagglehub import KaggleDatasetAdapter
 from IPLScorer import IPLFantasyScorer
-from feature_utils import get_numeric_features, get_categorical_features
+from feature_utils import get_numeric_features, get_categorical_features, zero_variance_features_check
 
 def create_player_dataset(file_pattern="ipl_{season}_deliveries.csv", cache_file="player_matches.csv"):
     """
@@ -87,7 +87,11 @@ def create_features_and_train_test_split(deliveries_df, cache_file="features_df.
             if missing_features:
                 print(f"Missing features in cache: {missing_features}")
                 print("Recomputing features...")
-                return create_features_from_scratch(deliveries_df, cache_file)
+                players_df = create_features_from_scratch(deliveries_df, cache_file)
+
+                zero_variance_features_check(players_df)
+
+                return players_df
             
             return features_df
         except Exception as e:
@@ -166,7 +170,12 @@ def create_features_from_scratch(deliveries_df, cache_file):
                     opposition_matches = past_matches[past_matches['opposition'] == current_opposition]
                     opposition_avg_score = opposition_matches['total_score'].mean() if len(opposition_matches) > 0 else past_matches['total_score'].mean()
                     opposition_std_score = opposition_matches['total_score'].std() if len(opposition_matches) > 1 else past_matches['total_score'].std()
-                    
+
+                    total_venue_matches = player_df[(player_df['venue'] == current_venue) & (player_df['date'] < current_date)]
+                    # remove 0 values from batting score 
+                    total_venue_batting_avg = total_venue_matches[total_venue_matches['batting_score'] > 0]['batting_score'].mean() 
+                    total_venue_bowling_avg = total_venue_matches[total_venue_matches['bowling_score'] > 0]['bowling_score'].mean() 
+
                     # Calculate innings-specific batting and bowling averages
                     first_innings_batting = past_matches[
                         (past_matches['batting_innings'] == 1) & 
@@ -186,10 +195,10 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         (past_matches['bowling_score'] > 0)
                     ]
                     
-                    avg_1st_innings_bat_score = first_innings_batting['batting_score'].mean() if len(first_innings_batting) > 0 else past_matches['batting_score'].mean()
-                    avg_2nd_innings_bat_score = second_innings_batting['batting_score'].mean() if len(second_innings_batting) > 0 else past_matches['batting_score'].mean()
-                    avg_1st_innings_bowl_score = first_innings_bowling['bowling_score'].mean() if len(first_innings_bowling) > 0 else past_matches['bowling_score'].mean()
-                    avg_2nd_innings_bowl_score = second_innings_bowling['bowling_score'].mean() if len(second_innings_bowling) > 0 else past_matches['bowling_score'].mean()
+                    avg_1st_innings_bat_score = first_innings_batting['batting_score'].mean() if len(first_innings_batting) >= 3 else 0
+                    avg_2nd_innings_bat_score = second_innings_batting['batting_score'].mean() if len(second_innings_batting) >= 3 else 0
+                    avg_1st_innings_bowl_score = first_innings_bowling['bowling_score'].mean() if len(first_innings_bowling) >= 3 else 0
+                    avg_2nd_innings_bowl_score = second_innings_bowling['bowling_score'].mean() if len(second_innings_bowling) >= 3 else 0
                     
                     # Use last 5 matches at venue if available, otherwise use last 5 overall matches
                     venue_matches_recent = venue_matches.tail(min(5, len(venue_matches)))
@@ -211,23 +220,23 @@ def create_features_from_scratch(deliveries_df, cache_file):
                     batting_matches = past_matches[past_matches.apply(lambda x: x['batting_stats'].get('balls', 0) > 0, axis=1)]
                     bowling_matches = past_matches[past_matches.apply(lambda x: x['bowling_stats'].get('balls', 0) > 0, axis=1)]
 
-                    batting_avg = batting_matches['batting_score'].mean() if len(batting_matches) > 0 else past_matches['batting_score'].mean()
-                    bowling_avg = bowling_matches['bowling_score'].mean() if len(bowling_matches) > 0 else past_matches['bowling_score'].mean()
+                    batting_avg = batting_matches['batting_score'].mean() if len(batting_matches) >= 3 else 0
+                    bowling_avg = bowling_matches['bowling_score'].mean() if len(bowling_matches) >= 3 else 0
                     
                     # Calculate role-specific recent performance
                     recent_batting_matches = batting_matches.tail(5)
                     recent_bowling_matches = bowling_matches.tail(5)
                     
-                    recent_batting_avg = recent_batting_matches['batting_score'].mean() if len(recent_batting_matches) > 0 else batting_avg
-                    recent_bowling_avg = recent_bowling_matches['bowling_score'].mean() if len(recent_bowling_matches) > 0 else bowling_avg
+                    recent_batting_avg = recent_batting_matches['batting_score'].mean() if len(recent_batting_matches) >= 3 else batting_avg
+                    recent_bowling_avg = recent_bowling_matches['bowling_score'].mean() if len(recent_bowling_matches) >= 3 else bowling_avg
 
                     # Calculate average balls faced and bowled
-                    average_balls_faced = batting_matches.apply(lambda x: x['batting_stats'].get('balls', 0), axis=1).mean() if len(batting_matches) > 0 else 0
-                    average_balls_bowled = bowling_matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).mean() if len(bowling_matches) > 0 else 0
+                    average_balls_faced = batting_matches.apply(lambda x: x['batting_stats'].get('balls', 0), axis=1).mean() if len(batting_matches) >= 5 else 0
+                    average_balls_bowled = bowling_matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).mean() if len(bowling_matches) >= 5 else 0
 
                     # Calculate venue-specific average balls faced and bowled
-                    average_balls_faced_at_venue = venue_matches.apply(lambda x: x['batting_stats'].get('balls', 0), axis=1).mean() if len(venue_matches) > 0 else average_balls_faced
-                    average_balls_bowled_at_venue = venue_matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).mean() if len(venue_matches) > 0 else average_balls_bowled
+                    average_balls_faced_at_venue = venue_matches.apply(lambda x: x['batting_stats'].get('balls', 0), axis=1).mean() if len(venue_matches) >= 3 else average_balls_faced
+                    average_balls_bowled_at_venue = venue_matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).mean() if len(venue_matches) >= 3 else average_balls_bowled
 
                     # Calculate venue-specific batting and bowling averages
                     venue_batting = venue_matches[venue_matches.apply(lambda x: x['batting_stats'].get('balls', 0) > 0, axis=1)]
@@ -252,25 +261,25 @@ def create_features_from_scratch(deliveries_df, cache_file):
 
                     # Calculate strike rates and economy rate
                     def calculate_batting_strike_rate(matches):
-                        if len(matches) == 0:
+                        if len(matches) <= 3:
                             return 0
                         total_runs = matches.apply(lambda x: x['batting_stats'].get('runs', 0), axis=1).sum()
                         total_balls = matches.apply(lambda x: x['batting_stats'].get('balls', 0), axis=1).sum()
-                        return total_runs / total_balls if total_balls > 0 else 0
+                        return total_runs / total_balls if total_balls >= 30 else 0
 
                     def calculate_bowling_strike_rate(matches):
-                        if len(matches) == 0:
+                        if len(matches) <= 3:
                             return 0
                         total_balls = matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).sum()
                         total_wickets = matches.apply(lambda x: x['bowling_stats'].get('wickets', 0), axis=1).sum()
                         return total_balls / total_wickets if total_wickets > 0 else 100.0
 
                     def calculate_economy_rate(matches):
-                        if len(matches) == 0:
+                        if len(matches) <= 3:
                             return 0
                         total_runs = matches.apply(lambda x: x['bowling_stats'].get('runs', 0), axis=1).sum()
                         total_balls = matches.apply(lambda x: x['bowling_stats'].get('balls', 0), axis=1).sum()
-                        return total_runs / total_balls if total_balls > 0 else 20
+                        return total_runs / total_balls if total_balls >= 30 else 20
 
                     strike_rate_batting = calculate_batting_strike_rate(batting_matches)
                     strike_rate_bowling = calculate_bowling_strike_rate(bowling_matches)
@@ -311,12 +320,19 @@ def create_features_from_scratch(deliveries_df, cache_file):
                                     player_rank = match_ranks[historical_match_players['player'] == player].iloc[0]
                                     past_match_ranks.append(player_rank)
                     
+                    # calculate full venue stats 
+
+
+
+
+                    year = pd.to_datetime(current_match['date'].iloc[0]).year
                     # Calculate average rank and top 11 count
                     features = {
                         'player': player,
                         'match_id': current_match['match_id'].iloc[0],
                         'date': current_match['date'].iloc[0],
-                        'season': current_match['season'].iloc[0] if 'season' in current_match.columns else None,
+                        'season': year,
+                        'match_number': int(current_match['match_id']) %  year,
                         'team': current_match['team'].iloc[0],
                         'opposition': current_match['opposition'].iloc[0],
                         'venue': current_venue,
@@ -393,8 +409,21 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         
                         # Historical rank-based features
                         'avg_rank_last_5': np.mean(past_match_ranks) if past_match_ranks else 12,
-                        'top_11_count_last_5': sum(1 for rank in past_match_ranks if rank <= 11) if past_match_ranks else 0
+                        'top_11_count_last_5': sum(1 for rank in past_match_ranks if rank <= 11) if past_match_ranks else 0,
+
+                        #total venue stats 
+                        'total_venue_batting_avg': total_venue_batting_avg,
+                        'total_venue_bowling_avg': total_venue_bowling_avg,
                     }
+                    
+                    # Add team composition features
+                    #team_players = past_matches[past_matches['team'] == current_match['team'].iloc[0]]
+                    #team_features = calculate_team_composition_features(current_match, team_players)
+                    #features.update(team_features)
+                    
+                    # Add player correlation features
+                    #correlation_features = calculate_player_correlation_features(current_match, team_players)
+                    #features.update(correlation_features)
                     
                     features_df.append(features)
                 except Exception as e:
@@ -427,51 +456,130 @@ def create_features_from_scratch(deliveries_df, cache_file):
     
     return features_df
 
-def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, prediction_type):
+def calculate_team_composition_features(player_data, team_players_data):
     """
-    Train and evaluate Random Forest model with optimized parameters
-    prediction_type can be 'batting' or 'bowling'
+    Calculate features related to team composition and strength.
     """
-    # Calculate bounds for clamping based on training data
-    def calculate_bounds(y, iqr_multiplier):
-        q1 = np.percentile(y, 25)
-        q3 = np.percentile(y, 75)
-        iqr = q3 - q1
-        lower_bound = q1 - iqr_multiplier * iqr
-        upper_bound = q3 + iqr_multiplier * iqr
-        return lower_bound, upper_bound
+    # Handle empty team_players_data case
+    if len(team_players_data) == 0:
+        return {
+            'team_batting_strength': 0.0,
+            'team_bowling_strength': 0.0,
+            'team_all_rounder_count': 0,
+            'team_recent_performance': 0.0,
+            'team_balance_score': 1.0  # Neutral default value
+        }
     
-    # Use different IQR multipliers for batting and bowling
-    if prediction_type == "batting":
-        # Use a larger multiplier for batting to allow for more extreme scores
-        lower_bound, upper_bound = calculate_bounds(y_train, iqr_multiplier=2.5)
+    # Get current match date
+    current_date = pd.to_datetime(player_data['date'].iloc[0])
+    
+    # Filter team players data to only include matches before current match
+    historical_team_players = team_players_data[pd.to_datetime(team_players_data['date']) < current_date]
+    
+    if len(historical_team_players) == 0:
+        return {
+            'team_batting_strength': 0.0,
+            'team_bowling_strength': 0.0,
+            'team_all_rounder_count': 0,
+            'team_recent_performance': 0.0,
+            'team_balance_score': 1.0
+        }
+    
+    # Calculate team batting strength (average batting score)
+    team_batting_strength = historical_team_players['batting_score'].mean()
+    
+    # Calculate team bowling strength (average bowling score)
+    team_bowling_strength = historical_team_players['bowling_score'].mean()
+    
+    # Count all-rounders (players with both batting and bowling scores above threshold)
+    team_all_rounder_count = len(historical_team_players[
+        (historical_team_players['batting_score'] > 30) & 
+        (historical_team_players['bowling_score'] > 30)
+    ])
+    
+    # Calculate team's recent performance (last 5 matches before current match)
+    team_recent_performance = historical_team_players.sort_values('date').tail(5)['total_score'].mean()
+    
+    # Calculate team balance score (ratio of batting to bowling strength)
+    # Handle edge cases where either strength is 0 or very small
+    if team_bowling_strength <= 0.1:  # If bowling strength is very small
+        team_balance_score = 2.0 if team_batting_strength > 0 else 1.0  # Max value if batting is good, neutral if not
     else:
-        # Use a smaller multiplier for bowling since scores are more consistent
-        lower_bound, upper_bound = calculate_bounds(y_train, iqr_multiplier=1.5)
+        team_balance_score = min(2.0, team_batting_strength / team_bowling_strength)  # Cap at 2.0
     
-    # Clamp training and test data
-    y_train_clamped = y_train.clip(lower=lower_bound, upper=upper_bound)
-    y_test_clamped = y_test.clip(lower=lower_bound, upper=upper_bound)
+    return {
+        'team_batting_strength': team_batting_strength,
+        'team_bowling_strength': team_bowling_strength,
+        'team_all_rounder_count': team_all_rounder_count,
+        'team_recent_performance': team_recent_performance,
+        'team_balance_score': team_balance_score
+    }
+
+def calculate_player_correlation_features(player_data, team_players_data):
+    """
+    Calculate features related to player correlations and team composition.
+    """
+    # Handle empty team_players_data case
+    if len(team_players_data) == 0:
+        return {
+            'teammate_synergy_score': 0.5,  # Neutral default value
+            'role_complementarity': 0.5,    # Neutral default value
+            'batting_position_impact': 1.0   # Neutral default value
+        }
     
-    # Train Random Forest model with optimized parameters
-    from sklearn.ensemble import RandomForestRegressor
-    rf_model = RandomForestRegressor(
-        n_estimators=200,
-        max_depth=12,
-        min_samples_split=2,
-        min_samples_leaf=2,
-        max_features='sqrt',
-        bootstrap=True,
-        random_state=42,
-        n_jobs=-1
-    )
-    rf_model.fit(X_train, y_train_clamped, sample_weight=weights)
+    # Get current match date
+    current_date = pd.to_datetime(player_data['date'].iloc[0])
     
-    # Get predictions and clamp them
-    rf_test_pred = rf_model.predict(X_test)
-    rf_test_pred = pd.Series(rf_test_pred).clip(lower=lower_bound, upper=upper_bound)
+    # Filter team players data to only include matches before current match
+    historical_team_players = team_players_data[pd.to_datetime(team_players_data['date']) < current_date]
     
-    return rf_model, rf_test_pred, rf_test_pred, rf_test_pred, rf_test_pred, rf_test_pred, rf_test_pred, rf_test_pred, rf_test_pred
+    if len(historical_team_players) == 0:
+        return {
+            'teammate_synergy_score': 0.5,
+            'role_complementarity': 0.5,
+            'batting_position_impact': 1.0
+        }
+    
+    # Determine player's role based on historical performance
+    player_historical = historical_team_players[historical_team_players['player'] == player_data['player'].iloc[0]]
+    if len(player_historical) > 0:
+        is_batting = player_historical['batting_score'].mean() > player_historical['bowling_score'].mean()
+    else:
+        # If no historical data, use a neutral value
+        is_batting = True
+    
+    # Count players with complementary roles based on historical performance
+    complementary_players = 0
+    for teammate in historical_team_players['player'].unique():
+        if teammate != player_data['player'].iloc[0]:
+            teammate_data = historical_team_players[historical_team_players['player'] == teammate]
+            teammate_is_batting = teammate_data['batting_score'].mean() > teammate_data['bowling_score'].mean()
+            if teammate_is_batting != is_batting:
+                complementary_players += 1
+    
+    # Calculate teammate synergy score based on complementary players
+    teammate_synergy_score = complementary_players / len(historical_team_players['player'].unique())
+    
+    # Calculate role complementarity
+    role_complementarity = complementary_players / len(historical_team_players['player'].unique())
+    
+    # Calculate batting position impact based on historical performance
+    if len(player_historical) > 0:
+        batting_score = player_historical['batting_score'].mean()
+        bowling_score = player_historical['bowling_score'].mean()
+        
+        if bowling_score <= 0.1:  # If bowling score is very small
+            batting_position_impact = 2.0 if batting_score > 0 else 1.0  # Max value if batting is good, neutral if not
+        else:
+            batting_position_impact = min(2.0, batting_score / bowling_score)  # Cap at 2.0
+    else:
+        batting_position_impact = 1.0  # Neutral default value
+    
+    return {
+        'teammate_synergy_score': teammate_synergy_score,
+        'role_complementarity': role_complementarity,
+        'batting_position_impact': batting_position_impact
+    }
 
 def main():
     # Create dataset
