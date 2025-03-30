@@ -183,21 +183,17 @@ def create_features_from_scratch(deliveries_df, cache_file):
 
                     # Calculate innings-specific batting and bowling averages
                     first_innings_batting = past_matches[
-                        (past_matches['batting_innings'] == 1) & 
-                        (past_matches['batting_score'] > 0)
+                        (past_matches['batting_innings'] == 1) 
                     ]
                     second_innings_batting = past_matches[
-                        (past_matches['batting_innings'] == 2) & 
-                        (past_matches['batting_score'] > 0)
+                        (past_matches['batting_innings'] == 2) 
                     ]
                     
                     first_innings_bowling = past_matches[
-                        (past_matches['bowling_innings'] == 1) & 
-                        (past_matches['bowling_score'] > 0)
+                        (past_matches['bowling_innings'] == 1)
                     ]
                     second_innings_bowling = past_matches[
-                        (past_matches['bowling_innings'] == 2) & 
-                        (past_matches['bowling_score'] > 0)
+                        (past_matches['bowling_innings'] == 2)
                     ]
                     
                     avg_1st_innings_bat_score = first_innings_batting['batting_score'].mean() if len(first_innings_batting) >= 3 else 0
@@ -674,12 +670,12 @@ def main():
         
         # Create dummy variables for categorical features
         X_train = pd.get_dummies(train_data[numeric_features + categorical_features], 
-                                columns=categorical_features, drop_first=True)
+                                columns=categorical_features, drop_first=False)
         
         # Get test data for all players in this match
         match_data = features_df[features_df['match_id'] == match['match_id']]
         X_test = pd.get_dummies(match_data[numeric_features + categorical_features], 
-                               columns=categorical_features, drop_first=True)
+                               columns=categorical_features, drop_first=False)
         
         # Handle missing columns more efficiently
         missing_cols = set(X_train.columns) - set(X_test.columns)

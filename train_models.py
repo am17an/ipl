@@ -23,7 +23,7 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
         z_scores = np.abs((y_train - y_train.mean()) / y_train.std())
         
         # Create mask for non-outlier data (z-score <= 2)
-        non_outlier_mask = z_scores <= 2
+        non_outlier_mask = z_scores <= 5
         
         # Filter training data to remove outliers
         X_train_filtered = X_train[non_outlier_mask]
@@ -128,6 +128,8 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
         fit_intercept=True
     )
     ridge_model.fit(X_train_to_use, y_train_to_use, sample_weight=weights_to_use)
+
+    X_train_to_use.to_csv('X_train_to_use.csv', index=False)
     
     # Get predictions
     xgb_train_pred = xgb_model.predict(X_train_to_use)
@@ -277,11 +279,11 @@ def main():
     
     # Create dummy variables for categorical features
     X_train = pd.get_dummies(train_data[numeric_features + categorical_features], 
-                            columns=categorical_features, drop_first=True)
+                            columns=categorical_features, drop_first=False)
     
     # Get validation data
     X_val = pd.get_dummies(validation_matches[numeric_features + categorical_features], 
-                          columns=categorical_features, drop_first=True)
+                          columns=categorical_features, drop_first=False)
     
     # Handle missing columns more efficiently
     missing_cols = set(X_train.columns) - set(X_val.columns)

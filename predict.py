@@ -80,19 +80,36 @@ class MatchPredictor:
         # Get the most recent features for this player
         features = player_history.iloc[-1].to_dict()
 
-
         current_match = match_data[match_data['match_id'] == match_id].iloc[0]
         venue_features = player_history[player_history['venue'] == current_match['venue']]
 
         if len(venue_features) > 0:
             features.update(venue_features.iloc[-1].to_dict())
 
+        # Determine which team the player belongs to
+        player_team = None
+        player_mapping = self.player_mapping[self.player_mapping['features_player'] == player]
+        if len(player_mapping) == 0:
+            raise ValueError(f"No mapping found for player {player}")
+            
+        roster_name = player_mapping['roster_name'].iloc[0]
+        if roster_name in current_match['playing_11_team1']:
+            player_team = current_match['team1']
+        elif roster_name in current_match['playing_11_team2']:
+            player_team = current_match['team2']
+        else:
+            raise ValueError(f"Player {roster_name} not found in either team")
+
+        # Assign innings based on player's team and who's batting first
+        batting_innings = 1 if player_team == current_match['batting_first'] else 2
+        bowling_innings = 2 if player_team == current_match['batting_first'] else 1
+
         features.update({
-            'team': current_match['team'],
-            'opposition': current_match['opposition'],
+            'team': player_team,
+            'opposition': current_match['team2'] if player_team == current_match['team1'] else current_match['team1'],
             'venue': current_match['venue'],
-            'batting_innings': 1 if current_match['team'] == current_match['batting_first'] else 2,
-            'bowling_innings': 2 if current_match['team'] == current_match['batting_first'] else 1
+            'batting_innings': batting_innings,
+            'bowling_innings': bowling_innings
         })
         
         return features
@@ -124,13 +141,15 @@ class MatchPredictor:
 
         match_data = pd.DataFrame([{
             'match_id': 'current_match',
-            'team': team1,
-            'opposition': team2,
+            'team1': team1,
+            'team2': team2,
             'venue': venue,
             'batting_first': batting_first,
             'batting_innings': batting_innings,
             'bowling_innings': bowling_innings,
-            'date': match_date
+            'date': match_date,
+            'playing_11_team1': playing_11_team1,
+            'playing_11_team2': playing_11_team2
         }])
         
         # Determine batting and bowling teams based on who's batting first
@@ -169,7 +188,7 @@ class MatchPredictor:
             # Create dummy variables for categorical features (excluding 'player')
             categorical_features = [col for col in self.categorical_features if col != 'player']
             X = pd.get_dummies(feature_vector[self.numeric_features + categorical_features], 
-                             columns=categorical_features, drop_first=True)
+                             columns=categorical_features, drop_first=False)
             
             # Handle missing columns more efficiently
             missing_cols = set(self.feature_names) - set(X.columns)
@@ -201,7 +220,7 @@ class MatchPredictor:
                 print(f"Column '{col}' has {nan_count} NaN values")
 
 
-            X.to_csv(f'debug/{feature_name}.csv')
+            X.to_csv(f'debug/{player}.csv')
                     
             role = player_mapping['role'].iloc[0]
             if role in ['Batter', 'Wicketkeeper/Batter', 'All-rounder']:
@@ -284,7 +303,7 @@ class MatchPredictor:
             # Create dummy variables for categorical features (excluding 'player')
             categorical_features = [col for col in self.categorical_features if col != 'player']
             X = pd.get_dummies(feature_vector[self.numeric_features + categorical_features], 
-                             columns=categorical_features, drop_first=True)
+                             columns=categorical_features, drop_first=False)
             
             # Handle missing columns more efficiently
             missing_cols = set(self.feature_names) - set(X.columns)
@@ -437,7 +456,7 @@ def diagnose_player_prediction(predictor, player_name, match_id):
     feature_vector = player_data[numeric_features + categorical_features].copy()
     
     # Create dummy variables for categorical features
-    X = pd.get_dummies(feature_vector, columns=categorical_features, drop_first=True)
+    X = pd.get_dummies(feature_vector, columns=categorical_features, drop_first=False)
     
     # Handle missing columns
     missing_cols = set(predictor.feature_names) - set(X.columns)
