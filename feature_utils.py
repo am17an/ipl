@@ -9,7 +9,7 @@ def get_numeric_features():
     return [
         # Basic features
         'avg_score', 'weighted_avg_score', 'num_matches', 'recent_score',
-        
+
         # Venue-specific features
         'venue_avg_score', 'venue_std_score', 'venue_recent_score', 'num_venue_matches',
         
@@ -48,10 +48,8 @@ def get_numeric_features():
         'recent_opposition_avg', 'recent_opposition_std',
 
         # Total venue stats
-        'total_venue_batting_avg', 'total_venue_bowling_avg',
-
-        # season
-        'season', 'match_number',
+        'total_venue_batting_avg_first_innings', 'total_venue_bowling_avg_first_innings',
+        'total_venue_batting_avg_second_innings', 'total_venue_bowling_avg_second_innings',
 
         # Team composition features
         #'team_batting_strength', 'team_bowling_strength', 'team_all_rounder_count',
@@ -63,7 +61,7 @@ def get_numeric_features():
 
 def get_categorical_features():
     """Return the list of categorical features used in the model."""
-    return ['team', 'opposition', 'venue', 'player']
+    return ['team', 'opposition', 'venue', 'player', 'batting_innings', 'bowling_innings', 'season']
 
 def zero_variance_features_check(df):
     """

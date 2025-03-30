@@ -1,112 +1,113 @@
 features_player,roster_name,team,role,geography,confidence
-Shivam Mavi,,,,,67
-Narine,Sunil Narine,KKR,All-rounder,Overseas,90
-Jadeja,Ravindra Jadeja,CSK,All-rounder,Indian,90
-Santner,Mitchell Santner,MI,All-rounder,Overseas,90
-Russell,Andre Russell,KKR,All-rounder,Overseas,90
-Jackson,,,,,59
-Shreyas Iyer,Shreyas Iyer,PBKS,Batter,Indian,100
 Conway,Devon Conway,CSK,Batter,Overseas,90
-Venkatesh Iyer,Venkatesh Iyer,KKR,Batter,Indian,100
-Rahane,Ajinkya Rahane,KKR,Batter,Indian,90
-Uthappa,,,,,60
+Shivam Mavi,,,,,67
+Shreyas Iyer,Shreyas Iyer,PBKS,Batter,Indian,100
+Jadeja,Ravindra Jadeja,CSK,All-rounder,Indian,90
 Gaikwad,Ruturaj Gaikwad,CSK,Batter,Indian,90
-Umesh Yadav,,,,,67
-Dwayne Bravo,,,,,50
-Nitish Rana,Nitish Rana,RR,All-rounder,Indian,100
-Dhoni,MS Dhoni,CSK,Wicketkeeper/Batter,Indian,90
-Chakaravarthy,Varun Chakaravarthy,KKR,Bowler,Indian,95
-Shivam Dube,Shivam Dube,CSK,Batter,Indian,100
-Tushar Deshpande,Tushar Deshpande,RR,Bowler,Indian,100
+Santner,Mitchell Santner,MI,All-rounder,Overseas,90
 Billings,,,,,60
+Umesh Yadav,,,,,67
+Nitish Rana,Nitish Rana,RR,All-rounder,Indian,100
+Chakaravarthy,Varun Chakaravarthy,KKR,Bowler,Indian,95
+Russell,Andre Russell,KKR,All-rounder,Overseas,90
+Rahane,Ajinkya Rahane,KKR,Batter,Indian,90
+Narine,Sunil Narine,KKR,All-rounder,Overseas,90
+Tushar Deshpande,Tushar Deshpande,RR,Bowler,Indian,100
 Rayudu,,,,,57
-du Plessis,Faf du Plessis,DC,Batter,Overseas,95
-Kohli,Virat Kohli,RCB,Batter,Indian,90
-Rahul Chahar,Rahul Chahar,SRH,Bowler,Indian,100
-Willey,,,,,68
-Akash Deep,Akash Deep,LSG,Bowler,Indian,100
-Harshal Patel,Harshal Patel,SRH,All-rounder,Indian,100
-Rajapaksa,,,,,64
-Hasaranga,Wanindu Hasaranga,RR,Bowler,Overseas,90
-Livingstone,Liam Livingstone,RCB,All-rounder,Overseas,95
+Shivam Dube,Shivam Dube,CSK,Batter,Indian,100
+Dhoni,MS Dhoni,CSK,Wicketkeeper/Batter,Indian,90
+Dwayne Bravo,,,,,50
+Uthappa,,,,,60
+Jackson,,,,,59
+Venkatesh Iyer,Venkatesh Iyer,KKR,Batter,Indian,100
 Mayank,Mayank Markande,KKR,Bowler,Indian,90
-Sandeep Sharma,Sandeep Sharma,RR,Bowler,Indian,100
-Karthik,,,,,77
-Arshdeep Singh,Arshdeep Singh,PBKS,Bowler,Indian,100
-Shahrukh Khan,Shahrukh Khan,GT,Batter,Indian,100
-Siraj,Mohammed Siraj,GT,Bowler,Indian,90
-Odean Smith,,,,,55
-Harpreet Brar,Harpreet Brar,PBKS,All-rounder,Indian,100
-Shahbaz Ahmed,Shahbaz Ahmed,LSG,All-rounder,Indian,100
 Anuj Rawat,Anuj Rawat,GT,Wicketkeeper/Batter,Indian,100
+Karthik,,,,,77
 Dhawan,,,,,60
-Tim David,Tim David,RCB,All-rounder,Overseas,100
-Mandeep,Ramandeep Singh,KKR,Batter,Indian,90
-Pollard,,,,,51
-Axar,Axar Patel,DC,All-rounder,Indian,90
-Thakur,Yash Thakur,PBKS,Bowler,Indian,90
-Ishan Kishan,Ishan Kishan,SRH,Wicketkeeper/Batter,Indian,100
-Lalit Yadav,,,,,70
+Harpreet Brar,Harpreet Brar,PBKS,All-rounder,Indian,100
+Kohli,Virat Kohli,RCB,Batter,Indian,90
+Rajapaksa,,,,,64
+du Plessis,Faf du Plessis,DC,Batter,Overseas,95
+Hasaranga,Wanindu Hasaranga,RR,Bowler,Overseas,90
+Harshal Patel,Harshal Patel,SRH,Bowler,Indian,100
+Rahul Chahar,Rahul Chahar,SRH,Bowler,Indian,100
+Shahrukh Khan,Shahrukh Khan,GT,Batter,Indian,100
+Arshdeep Singh,Arshdeep Singh,PBKS,Bowler,Indian,100
+Willey,,,,,68
+Livingstone,Liam Livingstone,RCB,All-rounder,Overseas,95
+Shahbaz Ahmed,Shahbaz Ahmed,LSG,All-rounder,Indian,100
+Siraj,Mohammed Siraj,GT,Bowler,Indian,90
+Sandeep Sharma,Sandeep Sharma,RR,Bowler,Indian,100
+Akash Deep,Akash Deep,LSG,Bowler,Indian,100
+Odean Smith,,,,,55
 Anmolpreet Singh,,,,,71
-Tilak Varma,Tilak Varma,MI,Batter,Indian,100
-Powell,Rovman Powell,KKR,Batter,Overseas,90
-Bumrah,Jasprit Bumrah,MI,Bowler,Indian,90
-Pant,Rishabh Pant,LSG,Wicketkeeper/Batter,Indian,90
-Khaleel Ahmed,Syed Khaleel Ahmed,CSK,Bowler,Indian,95
-Daniel Sams,,,,,61
+Lalit Yadav,,,,,70
 Kuldeep Yadav,Kuldeep Yadav,DC,Bowler,Indian,100
-Murugan Ashwin,,,,,61
+Bumrah,Jasprit Bumrah,MI,Bowler,Indian,90
+Khaleel Ahmed,Khaleel Ahmed,CSK,Bowler,Indian,95
 Tymal Mills,,,,,53
 Rohit,Rohit Sharma,MI,Batter,Indian,90
+Murugan Ashwin,,,,,61
+Tilak Varma,Tilak Varma,MI,Batter,Indian,100
+Tim David,Tim David,RCB,All-rounder,Overseas,100
+Powell,Rovman Powell,KKR,Batter,Overseas,90
+Mandeep,Ramandeep Singh,KKR,Batter,Indian,90
 Prithvi Shaw,,,,,59
+Pollard,,,,,51
+Daniel Sams,,,,,61
+Ishan Kishan,Ishan Kishan,SRH,Wicketkeeper/Batter,Indian,100
+Axar,Axar Patel,DC,All-rounder,Indian,90
 Basil Thampi,,,,,52
-Abhinav Manohar,Abhinav Manohar,SRH,All-rounder,Indian,100
-Rashid Khan,Rashid Khan,GT,Bowler,Overseas,100
-Avesh Khan,Avesh Khan,LSG,Bowler,Indian,100
-Ferguson,Lockie Ferguson,PBKS,Bowler,Overseas,90
+Thakur,Shardul Thakur,LSG,Bowler,Indian,90
+Pant,Rishabh Pant,LSG,Wicketkeeper/Batter,Indian,90
 Miller,David Miller,LSG,Batter,Overseas,90
-Shankar,Vijay Shankar,CSK,All-rounder,Indian,90
-Mohsin Khan,Mohsin Khan,LSG,Bowler,Indian,100
-Ayush Badoni,Ayush Badoni,LSG,Batter,Indian,100
-Shami,Mohammad Shami,SRH,Bowler,Indian,90
-Manish Pandey,Manish Pandey,KKR,Batter,Indian,100
-Krunal Pandya,Krunal Pandya,RCB,All-rounder,Indian,100
-Lewis,,,,,54
-Rahul,Rahul Tripathi,CSK,Batter,Indian,90
-Rahul Tewatia,Rahul Tewatia,GT,All-rounder,Indian,100
-Hooda,Deepak Hooda,CSK,Batter,Indian,90
-Chameera,Dushmantha Chameera,DC,Bowler,Overseas,90
-de Kock,Quinton de Kock,KKR,Wicketkeeper/Batter,Overseas,90
-Shubman Gill,Shubman Gill,GT,Batter,Indian,100
-Hardik Pandya,Hardik Pandya,MI,All-rounder,Indian,100
-Wade,,,,,77
+Rashid Khan,Rashid Khan,GT,Bowler,Overseas,100
 Ravi Bishnoi,Ravi Bishnoi,LSG,Bowler,Indian,100
-Bhuvneshwar,Bhuvneshwar Kumar,RCB,Bowler,Indian,90
+Abhinav Manohar,Abhinav Manohar,SRH,All-rounder,Indian,100
+Hooda,Deepak Hooda,CSK,Batter,Indian,90
+Manish Pandey,Manish Pandey,KKR,Batter,Indian,100
+Mohsin Khan,Mohsin Khan,LSG,Bowler,Indian,100
+de Kock,Quinton de Kock,KKR,Wicketkeeper/Batter,Overseas,90
+Wade,,,,,77
+Rahul,KL Rahul,DC,Batter,Indian,90
+Shubman Gill,Shubman Gill,GT,Batter,Indian,100
+Krunal Pandya,Krunal Pandya,RCB,All-rounder,Indian,100
+Shankar,Vijay Shankar,CSK,All-rounder,Indian,90
+Ferguson,Lockie Ferguson,PBKS,Bowler,Overseas,90
+Hardik Pandya,Hardik Pandya,MI,All-rounder,Indian,100
+Shami,Mohammed Shami,SRH,Bowler,Indian,90
+Ayush Badoni,Ayush Badoni,LSG,Batter,Indian,100
+Rahul Tewatia,Rahul Tewatia,GT,All-rounder,Indian,100
+Chameera,Dushmantha Chameera,DC,Bowler,Overseas,90
+Avesh Khan,Avesh Khan,LSG,Bowler,Indian,100
+Lewis,,,,,54
+Abdul Samad,Abdul Samad,LSG,All-rounder,Indian,100
 Shepherd,Romario Shepherd,RCB,All-rounder,Overseas,90
-Tripathi,Rahul Tripathi,CSK,Batter,Indian,90
-Samson,Sanju Samson,RR,Wicketkeeper/Batter,Indian,90
 T Natarajan,T Natarajan,DC,Bowler,Indian,100
-Padikkal,Devdutt Padikkal,RCB,Batter,Indian,90
-Williamson,,,,,60
+Washington Sundar,Washington Sundar,GT,All-rounder,Indian,100
 Pooran,Nicholas Pooran,LSG,Wicketkeeper/Batter,Overseas,90
-Markram,Aiden Markram,LSG,Batter,Overseas,90
+Samson,Sanju Samson,RR,Wicketkeeper/Batter,Indian,90
+Abhishek Sharma,Abhishek Sharma,SRH,All-rounder,Indian,100
+Riyan Parag,Riyan Parag,RR,Batter,Indian,100
+Williamson,,,,,60
+Ashwin,Ravichandran Ashwin,CSK,Bowler,Indian,90
+Padikkal,Devdutt Padikkal,RCB,Batter,Indian,90
 Buttler,Jos Buttler,GT,Wicketkeeper/Batter,Overseas,90
 Boult,Trent Boult,MI,Bowler,Overseas,90
 Prasidh,Prasidh Krishna,GT,Bowler,Indian,90
-Abhishek Sharma,Abhishek Sharma,SRH,All-rounder,Indian,100
-Abdul Samad,Abdul Samad,LSG,All-rounder,Indian,100
-Ashwin,Ravichandran Ashwin,CSK,Bowler,Indian,90
-Umran Malik,Umran Malik,KKR,Bowler,Indian,100
-Riyan Parag,Riyan Parag,RR,Batter,Indian,100
-Jaiswal,Yashasvi Jaiswal,RR,Batter,Indian,90
-Washington Sundar,Washington Sundar,GT,All-rounder,Indian,100
-Chahal,Yuzvendra Chahal,PBKS,Bowler,Indian,90
+Bhuvneshwar,Bhuvneshwar Kumar,RCB,Bowler,Indian,90
+Tripathi,Rahul Tripathi,CSK,Batter,Indian,90
 Hetmyer,Shimron Hetmyer,RR,Batter,Overseas,90
+Jaiswal,Yashasvi Jaiswal,RR,Batter,Indian,90
+Umran Malik,Umran Malik,KKR,Bowler,Indian,100
+Markram,Aiden Markram,LSG,Batter,Overseas,90
+Chahal,Yuzvendra Chahal,PBKS,Bowler,Indian,90
+Rutherford,Sherfane Rutherford,GT,Batter,Overseas,90
 Southee,,,,,64
 Mukesh Choudhary,Mukesh Choudhary,CSK,Bowler,Indian,100
 Moeen Ali,Moeen Ali,KKR,All-rounder,Indian,100
-Tye,,,,,60
 Pretorius,,,,,50
+Tye,,,,,60
 Rabada,Kagiso Rabada,GT,Bowler,Overseas,90
 Mustafizur,,,,,48
 Navdeep Saini,,,,,67
@@ -114,36 +115,36 @@ Jitesh Sharma,Jitesh Sharma,RCB,Wicketkeeper/Batter,Indian,100
 Jordan,,,,,66
 Vaibhav Arora,Vaibhav Arora,KKR,Bowler,Indian,100
 Holder,,,,,60
-Cummins,Pat Cummins,SRH,Bowler,Overseas,90
-Brevis,,,,,60
-Suryakumar Yadav,Suryakumar Yadav,MI,Batter,Indian,100
 Rasikh Salam,,,,,73
-Nortje,Anrich Nortje,KKR,Bowler,Overseas,90
+Cummins,Pat Cummins,SRH,Bowler,Overseas,90
+Suryakumar Yadav,Suryakumar Yadav,MI,Batter,Indian,100
+Brevis,,,,,60
 Sarfaraz Khan,,,,,67
 Gowtham,,,,,53
 Warner,,,,,66
+Nortje,Anrich Nortje,KKR,Bowler,Overseas,90
+Darshan Nalkande,Darshan Nalkande,DC,All-rounder,Indian,100
 Sai Sudharsan,Sai Sudharsan,GT,Batter,Indian,100
 Bairstow,,,,,48
-Darshan Nalkande,Darshan Nalkande,DC,All-rounder,Indian,100
 Unadkat,Jaydev Unadkat,SRH,Bowler,Indian,90
-Ramandeep Singh,Ramandeep Singh,KKR,Batter,Indian,100
 Maxwell,Glenn Maxwell,PBKS,All-rounder,Overseas,90
-Theekshana,Maheesh Theekshana,RR,Bowler,Overseas,86
+Ramandeep Singh,Ramandeep Singh,KKR,Batter,Indian,100
+M Theekshana,,,,,86
 Marco Jansen,Marco Jansen,PBKS,All-rounder,Overseas,100
-Kuldeep Sen,Kuldeep Sen,PBKS,Bowler,Indian,100
 van der Dussen,,,,,67
 Stoinis,Marcus Stoinis,PBKS,All-rounder,Overseas,90
+Kuldeep Sen,Kuldeep Sen,PBKS,Bowler,Indian,100
 Hazlewood,Josh Hazlewood,RCB,Bowler,Overseas,90
 Prabhudessai,,,,,56
 Yash Dayal,Yash Dayal,RCB,Bowler,Indian,100
-J Suchith,,,,,57
 Shashank Singh,Shashank Singh,PBKS,Batter,Indian,100
-Aman Hakim Khan,,,,,86
 Finch,,,,,54
+J Suchith,,,,,57
+Aman Hakim Khan,,,,,86
 Mitchell Marsh,Mitchell Marsh,LSG,All-rounder,Overseas,100
 (sub)Gowtham,,,,,0
-Alzarri Joseph,,,,,74
 W Saha,,,,,60
+Alzarri Joseph,,,,,74
 Prabhsimran,Prabhsimran Singh,PBKS,Batter,Indian,90
 Obed McCoy,,,,,45
 Nathan Ellis,Nathan Ellis,CSK,Bowler,Overseas,100
@@ -153,46 +154,46 @@ Rinku Singh,Rinku Singh,KKR,Batter,Indian,100
 Rishi Dhawan,,,,,70
 Rajat Patidar,Rajat Patidar,RCB,Batter,Indian,100
 Harshit Rana,Harshit Rana,KKR,Bowler,Indian,100
+Chetan Sakariya,,,,,57
 Indrajith,,,,,60
-Sakariya,Chetan Sakariya2,RR,Bowler,Indian,57
-Kumar Kartikeya,Kumar Kartikeya,RR,Bowler,Indian,95
+Kumar Kartikeya,Kumar Kartikeya Singh,RR,Bowler,Indian,95
 Sangwan,,,,,64
 Lomror,Mahipal Lomror,GT,All-rounder,Indian,90
 Simarjeet Singh,Simarjeet Singh,SRH,Bowler,Indian,100
 Anukul Roy,Anukul Roy,KKR,All-rounder,Indian,100
 (sub)Prabhudessai,,,,,0
-Ripal Patel,,,,,75
 Shreyas Gopal,Shreyas Gopal,CSK,Bowler,Indian,100
 Kartik Tyagi,,,,,68
+Ripal Patel,,,,,75
 Fazalhaq Farooqi,Fazalhaq Farooqi,RR,Bowler,Overseas,100
-Sai Kishore,R Sai Kishore,GT,All-rounder,Indian,95
 Karan Sharma,Karn Sharma,MI,Bowler,Indian,96
+Sai Kishore,R Sai Kishore,GT,All-rounder,Indian,95
 Tristan Stubbs,Tristan Stubbs,DC,Batter,Overseas,100
-N Jagadeesan,,,,,52
 Saha,,,,,68
-Priyam Garg,,,,,73
+N Jagadeesan,,,,,52
 Markande,Mayank Markande,KKR,Bowler,Indian,90
+Priyam Garg,,,,,73
 Prerak Mankad,,,,,57
-Chahar,Deepak Chahar,MI,Bowler,Indian,90
 Joshua Little,,,,,67
-Rossouw,,,,,43
-Mayers,,,,,71
-Mukesh Kumar,Mukesh Kumar,DC,Bowler,Indian,100
+Chahar,Deepak Chahar,MI,Bowler,Indian,90
 Mark Wood,,,,,57
+Mayers,,,,,71
+Rossouw,,,,,43
+Mukesh Kumar,Mukesh Kumar,DC,Bowler,Indian,100
 Sam Curran,Sam Curran,CSK,All-rounder,Overseas,100
 Gurbaz,Rahmanullah Gurbaz,KKR,Wicketkeeper/Batter,Overseas,90
 Raza,,,,,68
-Karn Sharma,Karn Sharma,MI,Bowler,Indian,100
+Green,,,,,54
+Jofra Archer,Jofra Archer,RR,Bowler,Overseas,100
 Topley,Reece Topley,MI,Bowler,Overseas,90
 Behrendorff,,,,,42
-Arshad Khan,Arshad Khan,GT,All-rounder,Indian,100
-M Bracewell,,,,,52
-Green,,,,,54
 Nehal Wadhera,Nehal Wadhera,PBKS,Batter,Indian,100
-Jofra Archer,Jofra Archer,RR,Bowler,Overseas,100
+M Bracewell,,,,,52
+Karn Sharma,Karn Sharma,MI,Bowler,Indian,100
 Chawla,,,,,60
-Glenn Phillips,Glenn Phillips,GT,All-rounder,Overseas,100
+Arshad Khan,Arshad Khan,GT,All-rounder,Indian,100
 Harry Brook,,,,,58
+Glenn Phillips,Glenn Phillips,GT,All-rounder,Overseas,100
 KM Asif,,,,,61
 Yash Thakur,Yash Thakur,PBKS,Bowler,Indian,100
 Abishek Porel,Abishek Porel,DC,Wicketkeeper/Batter,Indian,100
@@ -203,8 +204,8 @@ Kartikeya,Kumar Kartikeya Singh,RR,Bowler,Indian,90
 Short,,,,,72
 Parnell,,,,,64
 Yash Dhull,,,,,70
-Zampa,Adam Zampa,SRH,Bowler,Overseas,90
 Theekshana,Mahesh Theekshana,RR,Bowler,Overseas,90
+Zampa,Adam Zampa,SRH,Bowler,Overseas,90
 Akash Singh,Akash Singh,LSG,Bowler,Indian,100
 Mohit Sharma,Mohit Sharma,DC,Bowler,Indian,100
 Klaasen,Heinrich Klaasen,SRH,Wicketkeeper/Batter,Overseas,90
@@ -213,13 +214,13 @@ Yudhvir Singh,,,,,86
 Harpreet Singh,,,,,86
 Vijaykumar Vyshak,Vijaykumar Vyshak,PBKS,Bowler,Indian,100
 Noor Ahmad,Noor Ahmad,CSK,Bowler,Overseas,100
-Arjun Tendulkar,Arjun Tendulkar,MI,Bowler,Indian,100
 (sub)Ramandeep Singh,,,,,0
+Arjun Tendulkar,Arjun Tendulkar,MI,Bowler,Indian,100
 Pathirana,Matheesha Pathirana,CSK,Bowler,Overseas,90
 Naveen-ul-Haq,,,,,56
-Ishant,Nishant Sindhu,GT,All-rounder,Indian,90
-Philip Salt,Phil Salt,RCB,Wicketkeeper/Batter,Overseas,90
 Roy,Anukul Roy,KKR,All-rounder,Indian,90
+Philip Salt,Philip Salt,RCB,Wicketkeeper/Batter,Overseas,90
+Ishant,Nishant Sindhu,GT,All-rounder,Indian,90
 Mayank Dagar,,,,,75
 Wiese,,,,,54
 Akash Madhwal,Akash Madhwal,RR,Bowler,Indian,100
@@ -227,16 +228,16 @@ Swapnil Singh,Swapnil Singh,RCB,All-rounder,Indian,100
 Vishnu Vinod,Vishnu Vinod,PBKS,Wicketkeeper/Batter,Indian,100
 Sanvir Singh,,,,,86
 Shanaka,,,,,77
-Nitish Reddy,,,,,86
-Ravindra,Ravindra Jadeja,CSK,All-rounder,Indian,90
+Nitish Reddy,Nitish Kumar Reddy,SRH,All-rounder,Indian,86
+Ravindra,Rachin Ravindra,CSK,All-rounder,Indian,90
 Mitchell,Mitchell Starc,DC,Bowler,Overseas,90
 Starc,Mitchell Starc,DC,Bowler,Overseas,90
-Shai Hope,,,,,64
 Sumit Kumar,,,,,86
-Gerald Coetzee,Gerald Coetzee,GT,Bowler,Overseas,100
+Shai Hope,,,,,64
 Azmatullah,Azmatullah Omarzai,PBKS,All-rounder,Overseas,90
-Spencer Johnson,Spencer Johnson,KKR,Bowler,Overseas,100
 Naman Dhir,Naman Dhir,MI,All-rounder,Indian,100
+Spencer Johnson,Spencer Johnson,KKR,Bowler,Overseas,100
+Gerald Coetzee,Gerald Coetzee,GT,Bowler,Overseas,100
 Nandre Burger,,,,,62
 Sameer Rizvi,Sameer Rizvi,DC,All-rounder,Indian,100
 Head,Travis Head,SRH,Batter,Overseas,90

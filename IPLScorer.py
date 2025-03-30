@@ -102,6 +102,19 @@ class IPLFantasyScorer:
         elif bowling_innings is not None and batting_innings is None and not batting_data.empty:
             batting_innings = batting_data['innings'].iloc[0]
 
+        if bowling_innings is None:
+            if batting_innings == 1:
+                bowling_innings = 2
+            else:
+                bowling_innings = 1
+
+
+        if batting_innings is None:
+            if bowling_innings == 1:
+                batting_innings = 2
+            else:
+                batting_innings = 1
+
         # Calculate batting stats
         batting_data = player_data[player_data['striker'] == player]
         batting_stats = {

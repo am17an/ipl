@@ -4,6 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.linear_model import RidgeCV
 import pickle
 import os
 from datetime import datetime
@@ -11,6 +12,8 @@ from feature_utils import get_numeric_features, get_categorical_features
 import shap
 import matplotlib.pyplot as plt
 import traceback
+import yaml
+import argparse
 
 class MatchPredictor:
     def __init__(self, model_path='models', player_mapping_path='player_mapping.csv'):
@@ -24,14 +27,20 @@ class MatchPredictor:
         self.batting_xgb = pickle.load(open(os.path.join(model_path, 'batting_xgb_model.pkl'), 'rb'))
         self.batting_rf = pickle.load(open(os.path.join(model_path, 'batting_rf_model.pkl'), 'rb'))
         self.batting_mlp = pickle.load(open(os.path.join(model_path, 'batting_mlp_model.pkl'), 'rb'))
+        self.batting_ridge = pickle.load(open(os.path.join(model_path, 'batting_ridge_model.pkl'), 'rb'))
         
         self.bowling_xgb = pickle.load(open(os.path.join(model_path, 'bowling_xgb_model.pkl'), 'rb'))
         self.bowling_rf = pickle.load(open(os.path.join(model_path, 'bowling_rf_model.pkl'), 'rb'))
         self.bowling_mlp = pickle.load(open(os.path.join(model_path, 'bowling_mlp_model.pkl'), 'rb'))
+        self.bowling_ridge = pickle.load(open(os.path.join(model_path, 'bowling_ridge_model.pkl'), 'rb'))
         
         self.rank_xgb = pickle.load(open(os.path.join(model_path, 'rank_xgb_model.pkl'), 'rb'))
         self.rank_rf = pickle.load(open(os.path.join(model_path, 'rank_rf_model.pkl'), 'rb'))
         self.rank_mlp = pickle.load(open(os.path.join(model_path, 'rank_mlp_model.pkl'), 'rb'))
+        self.rank_ridge = pickle.load(open(os.path.join(model_path, 'rank_ridge_model.pkl'), 'rb'))
+        
+        # Load the captain model
+        self.captain_rf = pickle.load(open(os.path.join(model_path, 'captain_rf_model.pkl'), 'rb'))
         
         # Load the scaler and imputer
         self.scaler = pickle.load(open(os.path.join(model_path, 'scaler.pkl'), 'rb'))
@@ -53,9 +62,9 @@ class MatchPredictor:
         
         # Load ensemble weights from training
         self.ensemble_weights = {
-            'batting': {'xgb': 0.33, 'rf': 0.33, 'mlp': 0.33},
-            'bowling': {'xgb': 0.33, 'rf': 0.33, 'mlp': 0.33},
-            'rank': {'xgb': 0.33, 'rf': 0.33, 'mlp': 0.33}
+            'batting': {'xgb': 0.25, 'rf': 0.25, 'mlp': 0.25, 'ridge': 0.25},
+            'bowling': {'xgb': 0.25, 'rf': 0.25, 'mlp': 0.25, 'ridge': 0.25},
+            'rank': {'xgb': 0.5, 'rf': 0.5, 'mlp': 0.0, 'ridge': 0.0}
         }
     
     def get_player_features(self, player, match_id, features_df, match_data):
@@ -70,21 +79,25 @@ class MatchPredictor:
         
         # Get the most recent features for this player
         features = player_history.iloc[-1].to_dict()
-        
-        # Get current match information
+
+
         current_match = match_data[match_data['match_id'] == match_id].iloc[0]
-        
-        # Update only the current match information
+        venue_features = player_history[player_history['venue'] == current_match['venue']]
+
+        if len(venue_features) > 0:
+            features.update(venue_features.iloc[-1].to_dict())
+
         features.update({
             'team': current_match['team'],
             'opposition': current_match['opposition'],
             'venue': current_match['venue'],
-            'batting_first': 1 if current_match['team'] == current_match['batting_first'] else 0
+            'batting_innings': 1 if current_match['team'] == current_match['batting_first'] else 2,
+            'bowling_innings': 2 if current_match['team'] == current_match['batting_first'] else 1
         })
         
         return features
     
-    def predict_match(self, team1, team2, batting_first, playing_11_team1, playing_11_team2, venue):
+    def predict_match(self, team1, team2, batting_first, playing_11_team1, playing_11_team2, venue, match_date=None):
         """
         Predict scores for all players in both teams using ensemble of models
         Args:
@@ -94,14 +107,30 @@ class MatchPredictor:
             playing_11_team1: List of 11 players for first team
             playing_11_team2: List of 11 players for second team
             venue: Name of the venue where the match is being played
+            match_date: Date of the match (default: current date)
         """
-        # Create a temporary match data DataFrame for the current match
+        # Use provided match date or current date
+        if match_date is None:
+            match_date = pd.Timestamp.now()
+        else:
+            match_date = pd.to_datetime(match_date)
+
+        if batting_first == team1:
+            batting_innings = 1
+            bowling_innings = 2
+        else:
+            batting_innings = 2
+            bowling_innings = 1
+
         match_data = pd.DataFrame([{
             'match_id': 'current_match',
             'team': team1,
             'opposition': team2,
             'venue': venue,
-            'batting_first': batting_first
+            'batting_first': batting_first,
+            'batting_innings': batting_innings,
+            'bowling_innings': bowling_innings,
+            'date': match_date
         }])
         
         # Determine batting and bowling teams based on who's batting first
@@ -160,19 +189,34 @@ class MatchPredictor:
             # Make predictions based on role
             batting_score = 0
             bowling_score = 0
-            
+
+            #print all the columns which contains NaNs
+            # Get columns containing NaN values
+            cols_with_nan = X.columns[X.isna().any()].tolist()
+
+            # Print the column names with NaN values
+            # Optional: Print the count of NaN values in each column
+            for col in cols_with_nan:
+                nan_count = X[col].isna().sum()
+                print(f"Column '{col}' has {nan_count} NaN values")
+
+
+            X.to_csv(f'debug/{feature_name}.csv')
+                    
             role = player_mapping['role'].iloc[0]
             if role in ['Batter', 'Wicketkeeper/Batter', 'All-rounder']:
                 # Get predictions from all models
                 xgb_batting = self.batting_xgb.predict(X)[0]
                 rf_batting = self.batting_rf.predict(X)[0]
                 mlp_batting = self.batting_mlp.predict(X)[0]
+                ridge_batting = self.batting_ridge.predict(X)[0]
                 
                 # Combine predictions using ensemble weights
                 batting_score = (
                     xgb_batting * self.ensemble_weights['batting']['xgb'] +
                     rf_batting * self.ensemble_weights['batting']['rf'] +
-                    mlp_batting * self.ensemble_weights['batting']['mlp']
+                    mlp_batting * self.ensemble_weights['batting']['mlp'] +
+                    ridge_batting * self.ensemble_weights['batting']['ridge']
                 )
             
             if role in ['Bowler', 'All-rounder']:
@@ -180,25 +224,32 @@ class MatchPredictor:
                 xgb_bowling = self.bowling_xgb.predict(X)[0]
                 rf_bowling = self.bowling_rf.predict(X)[0]
                 mlp_bowling = self.bowling_mlp.predict(X)[0]
+                ridge_bowling = self.bowling_ridge.predict(X)[0]
                 
                 # Combine predictions using ensemble weights
                 bowling_score = (
                     xgb_bowling * self.ensemble_weights['bowling']['xgb'] +
                     rf_bowling * self.ensemble_weights['bowling']['rf'] +
-                    mlp_bowling * self.ensemble_weights['bowling']['mlp']
+                    mlp_bowling * self.ensemble_weights['bowling']['mlp'] +
+                    ridge_bowling * self.ensemble_weights['bowling']['ridge']
                 )
             
             # Get rank predictions from all models
             xgb_rank = self.rank_xgb.predict(X)[0]
             rf_rank = self.rank_rf.predict(X)[0]
             mlp_rank = self.rank_mlp.predict(X)[0]
+            ridge_rank = self.rank_ridge.predict(X)[0]
             
             # Combine rank predictions using ensemble weights
             predicted_rank = (
                 xgb_rank * self.ensemble_weights['rank']['xgb'] +
                 rf_rank * self.ensemble_weights['rank']['rf'] +
-                mlp_rank * self.ensemble_weights['rank']['mlp']
+                mlp_rank * self.ensemble_weights['rank']['mlp'] +
+                ridge_rank * self.ensemble_weights['rank']['ridge']
             )
+            
+            # Get captaincy score from the trained model
+            captaincy_score = self.captain_rf.predict(X)[0]
             
             predictions.append({
                 'player': player,
@@ -207,7 +258,8 @@ class MatchPredictor:
                 'batting_score': batting_score,
                 'bowling_score': bowling_score,
                 'total_score': batting_score + bowling_score,
-                'predicted_rank': predicted_rank
+                'predicted_rank': predicted_rank,
+                'captaincy_score': captaincy_score
             })
         
         # Process bowling team
@@ -259,12 +311,14 @@ class MatchPredictor:
                 xgb_batting = self.batting_xgb.predict(X)[0]
                 rf_batting = self.batting_rf.predict(X)[0]
                 mlp_batting = self.batting_mlp.predict(X)[0]
+                ridge_batting = self.batting_ridge.predict(X)[0]
                 
                 # Combine predictions using ensemble weights
                 batting_score = (
                     xgb_batting * self.ensemble_weights['batting']['xgb'] +
                     rf_batting * self.ensemble_weights['batting']['rf'] +
-                    mlp_batting * self.ensemble_weights['batting']['mlp']
+                    mlp_batting * self.ensemble_weights['batting']['mlp'] +
+                    ridge_batting * self.ensemble_weights['batting']['ridge']
                 )
             
             if role in ['Bowler', 'All-rounder']:
@@ -272,25 +326,32 @@ class MatchPredictor:
                 xgb_bowling = self.bowling_xgb.predict(X)[0]
                 rf_bowling = self.bowling_rf.predict(X)[0]
                 mlp_bowling = self.bowling_mlp.predict(X)[0]
+                ridge_bowling = self.bowling_ridge.predict(X)[0]
                 
                 # Combine predictions using ensemble weights
                 bowling_score = (
                     xgb_bowling * self.ensemble_weights['bowling']['xgb'] +
                     rf_bowling * self.ensemble_weights['bowling']['rf'] +
-                    mlp_bowling * self.ensemble_weights['bowling']['mlp']
+                    mlp_bowling * self.ensemble_weights['bowling']['mlp'] +
+                    ridge_bowling * self.ensemble_weights['bowling']['ridge']
                 )
             
             # Get rank predictions from all models
             xgb_rank = self.rank_xgb.predict(X)[0]
             rf_rank = self.rank_rf.predict(X)[0]
             mlp_rank = self.rank_mlp.predict(X)[0]
+            ridge_rank = self.rank_ridge.predict(X)[0]
             
             # Combine rank predictions using ensemble weights
             predicted_rank = (
                 xgb_rank * self.ensemble_weights['rank']['xgb'] +
                 rf_rank * self.ensemble_weights['rank']['rf'] +
-                mlp_rank * self.ensemble_weights['rank']['mlp']
+                mlp_rank * self.ensemble_weights['rank']['mlp'] +
+                ridge_rank * self.ensemble_weights['rank']['ridge']
             )
+            
+            # Get captaincy score from the trained model
+            captaincy_score = self.captain_rf.predict(X)[0]
             
             predictions.append({
                 'player': player,
@@ -299,7 +360,8 @@ class MatchPredictor:
                 'batting_score': batting_score,
                 'bowling_score': bowling_score,
                 'total_score': batting_score + bowling_score,
-                'predicted_rank': predicted_rank
+                'predicted_rank': predicted_rank,
+                'captaincy_score': captaincy_score
             })
         
         # Convert predictions to DataFrame and sort by total score
@@ -432,84 +494,83 @@ def diagnose_player_prediction(predictor, player_name, match_id):
     plt.close()
 
 def main():
-    # Example usage
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Predict IPL match outcomes using trained models')
+    parser.add_argument('--config', type=str, default='matches/sample_match.yaml',
+                      help='Path to the YAML configuration file')
+    args = parser.parse_args()
+    
+    # Initialize predictor
     predictor = MatchPredictor()
     
-    # Example of predicting a specific match number
     try:
-        match_no = 202505  # Replace with desired match number
+        # Load match configuration from YAML
+        with open(args.config, 'r') as file:
+            match_config = yaml.safe_load(file)
+        
+        # Extract values from config
+        team1 = match_config['teams']['team1']
+        team2 = match_config['teams']['team2']
+        batting_first = match_config['teams']['batting_first']
+        venue = match_config['teams']['venue']
+        playing_11_team1 = match_config['playing_11']['team1']
+        playing_11_team2 = match_config['playing_11']['team2']
+        match_date = match_config.get('match_date')  # Get match date from config
+        
+        # Make predictions using the loaded configuration
         predictions = predictor.predict_match(
-            team1="RR",
-            team2="KKR",
-            batting_first="RR",
-            playing_11_team1=[
-                "Yashasvi Jaiswal", "Shubham Dubey", "Nitish Rana", "Riyan Parag", "Dhruv Jurel", "Shimron Hetmyer", "Jofra Archer", "Maheesh Theekshana", "Tushar Deshpande", "Sandeep Sharma", "Fazalhaq Farooqi", "Sanju Samson", "Kunal Singh Rathore", "Akash Madhwal", "Kumar Kartikeya", "Kwena Maphaka", "Wanindu Hasaranga", "Yudhvir Singh Charak", "Ashok Sharma", "Vaibhav Suryavanshi"
-            ],
-            playing_11_team2=[
-                "Quinton de Kock", "Sunil Narine", "Ajinkya Rahane", "Venkatesh Iyer", "Rinku Singh", "Angkrish Raghuvanshi", "Andre Russell", "Ramandeep Singh", "Spencer Johnson", "Harshit Rana", "Varun Chakaravarthy", "Anrich Nortje", "Manish Pandey", "Vaibhav Arora", "Anukul Roy", "Luvnith Sisodia", "Chetan Sakariya", "Rahmanullah Gurbaz", "Mayank Markande", "Rovman Powell", "Moeen Ali"
-            ],
-            venue="Barsapara Cricket Stadium, Guwahati"
+            team1=team1,
+            team2=team2,
+            batting_first=batting_first,
+            playing_11_team1=playing_11_team1,
+            playing_11_team2=playing_11_team2,
+            venue=venue,
+            match_date=match_date
         )
         
-        # Print predictions sorted by total score
-        print(f"\nPredictions for Match {match_no} (Sorted by Total Score):")
+        # Print overall predictions sorted by total score
+        print(f"\nOverall Predictions for {team1} vs {team2} (Sorted by Total Score):")
         print("--------------------------------")
-        print(predictions[['player', 'team', 'role', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'impact_score', 'total_expected_value']].to_string(index=False))
+        print(predictions[['player', 'team', 'role', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'captaincy_score']].to_string(index=False))
         
-        # Print predictions sorted by predicted rank
-        print(f"\nPredictions for Match {match_no} (Sorted by Predicted Rank):")
-        print("--------------------------------")
-        rank_sorted = predictions.sort_values('predicted_rank')
-        print(rank_sorted[['player', 'team', 'role', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'impact_score', 'total_expected_value']].to_string(index=False))
-        
-        # Print predictions sorted by impact score
-        print(f"\nPredictions for Match {match_no} (Sorted by Impact Score):")
-        print("--------------------------------")
-        impact_sorted = predictions.sort_values('impact_score', ascending=False)
-        print(impact_sorted[['player', 'team', 'role', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'impact_score', 'total_expected_value']].to_string(index=False))
-        
-        # Print predictions sorted by total expected value
-        print(f"\nPredictions for Match {match_no} (Sorted by Total Expected Value):")
-        print("--------------------------------")
-        value_sorted = predictions.sort_values('total_expected_value', ascending=False)
-        print(value_sorted[['player', 'team', 'role', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'impact_score', 'total_expected_value']].to_string(index=False))
-        
-        # Print predictions sorted by total score (descending)
-        print(f"\nPredictions for Match {match_no} (Sorted by Total Score - Descending):")
-        print("--------------------------------")
-        score_sorted = predictions.sort_values('total_score', ascending=False)
-        print(score_sorted[['player', 'team', 'role', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'impact_score', 'total_expected_value']].to_string(index=False))
+        # Print predictions by role
+        roles = ['Batter', 'Bowler', 'All-rounder', 'Wicketkeeper/Batter']
+        for role in roles:
+            role_predictions = predictions[predictions['role'] == role]
+            if len(role_predictions) > 0:
+                print(f"\n{role}s (Sorted by Total Score):")
+                print("--------------------------------")
+                role_sorted = role_predictions.sort_values('total_score', ascending=False)
+                print(role_sorted[['player', 'team', 'batting_score', 'bowling_score', 'total_score', 'predicted_rank', 'captaincy_score']].to_string(index=False))
         
         # Print team totals
         print("\nTeam Totals:")
         print(predictions.groupby('team')['total_score'].sum())
         
-        # Print top 3 captain recommendations based on total score
-        print("\nTop 3 Captain Recommendations (Based on Total Score):")
-        captain_recommendations = predictions.nlargest(3, 'total_score')
-        for idx, row in captain_recommendations.iterrows():
-            print(f"{row['player']} ({row['team']}) - Total Score: {row['total_score']:.2f}, Predicted Rank: {row['predicted_rank']:.1f}, Impact Score: {row['impact_score']:.2f}, Expected Value: {row['total_expected_value']:.2f}")
+        # Print top 3 captain recommendations by role
+        print("\nTop Captain Recommendations by Role:")
+        for role in roles:
+            role_predictions = predictions[predictions['role'] == role]
+            if len(role_predictions) > 0:
+                print(f"\n{role}s (Top 3 by Captaincy Score):")
+                print("--------------------------------")
+                role_captains = role_predictions.nlargest(3, 'captaincy_score')
+                for idx, row in role_captains.iterrows():
+                    print(f"{row['player']} ({row['team']}) - Total Score: {row['total_score']:.2f}, Predicted Rank: {row['predicted_rank']:.1f}, Captaincy Score: {row['captaincy_score']:.2f}")
         
-        # Print top 3 captain recommendations based on predicted rank
-        print("\nTop 3 Captain Recommendations (Based on Predicted Rank):")
-        rank_recommendations = predictions.nsmallest(3, 'predicted_rank')
-        for idx, row in rank_recommendations.iterrows():
-            print(f"{row['player']} ({row['team']}) - Total Score: {row['total_score']:.2f}, Predicted Rank: {row['predicted_rank']:.1f}, Impact Score: {row['impact_score']:.2f}, Expected Value: {row['total_expected_value']:.2f}")
-        
-        # Print top 3 captain recommendations based on impact score
-        print("\nTop 3 Captain Recommendations (Based on Impact Score):")
-        impact_recommendations = predictions.nlargest(3, 'impact_score')
-        for idx, row in impact_recommendations.iterrows():
-            print(f"{row['player']} ({row['team']}) - Total Score: {row['total_score']:.2f}, Predicted Rank: {row['predicted_rank']:.1f}, Impact Score: {row['impact_score']:.2f}, Expected Value: {row['total_expected_value']:.2f}")
-        
-        # Print top 3 captain recommendations based on total expected value
-        print("\nTop 3 Captain Recommendations (Based on Total Expected Value):")
-        value_recommendations = predictions.nlargest(3, 'total_expected_value')
-        for idx, row in value_recommendations.iterrows():
-            print(f"{row['player']} ({row['team']}) - Total Score: {row['total_score']:.2f}, Predicted Rank: {row['predicted_rank']:.1f}, Impact Score: {row['impact_score']:.2f}, Expected Value: {row['total_expected_value']:.2f}")
+        # Print top 3 value picks by role (based on impact_score)
+        print("\nTop Value Picks by Role (Based on Impact Score):")
+        for role in roles:
+            role_predictions = predictions[predictions['role'] == role]
+            if len(role_predictions) > 0:
+                print(f"\n{role}s (Top 3 by Impact Score):")
+                print("--------------------------------")
+                role_value = role_predictions.nlargest(3, 'impact_score')
+                for idx, row in role_value.iterrows():
+                    print(f"{row['player']} ({row['team']}) - Total Score: {row['total_score']:.2f}, Impact Score: {row['impact_score']:.2f}, Predicted Rank: {row['predicted_rank']:.1f}")
         
     except Exception as e:
-        print(f"Error predicting match {match_no}: {str(e)}")
+        print(f"Error making predictions: {str(e)}")
         traceback.print_exc()
 
 if __name__ == "__main__":

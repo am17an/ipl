@@ -5,6 +5,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.linear_model import RidgeCV
 import pickle
 import os
 from explore import create_player_dataset, create_features_and_train_test_split
@@ -13,74 +14,61 @@ import xgboost as xgb
 
 def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, prediction_type):
     """
-    Train and evaluate XGBoost, Random Forest, and MLP models with optimized parameters
-    prediction_type can be 'batting' or 'bowling'
+    Train and evaluate XGBoost, Random Forest, MLP, and Ridge models with optimized parameters
+    prediction_type can be 'batting', 'bowling', or 'rank'
     """
-    # Calculate bounds for clamping based on training data
-    def calculate_bounds(y, iqr_multiplier):
-        q1 = np.percentile(y, 5)
-        q3 = np.percentile(y, 95)
-        iqr = q3 - q1
-        lower_bound = q1 - iqr_multiplier * iqr
-        upper_bound = q3 + iqr_multiplier * iqr
-        return lower_bound, upper_bound
-    
-    # Use different IQR multipliers for batting and bowling
-    if prediction_type == "batting":
-        # Use a larger multiplier for batting to allow for more extreme scores
-        lower_bound, upper_bound = calculate_bounds(y_train, iqr_multiplier=2.5)
-    else:
-        # Use a smaller multiplier for bowling since scores are more consistent
-        lower_bound, upper_bound = calculate_bounds(y_train, iqr_multiplier=1.5)
-    
-    # Clamp training and test data
-    y_train_clamped = y_train #$y_train.clip(lower=lower_bound, upper=upper_bound)
-    y_test_clamped = y_test #y_test.clip(lower=lower_bound, upper=upper_bound)
-    
-    # Create validation set for early stopping
-    val_size = int(0.2 * len(X_train))
-    X_train_final = X_train[:-val_size]
-    y_train_final = y_train_clamped[:-val_size]
-    X_val = X_train[-val_size:]
-    y_val = y_train_clamped[-val_size:]
+    # Apply z-score outlier removal only for batting and bowling models
+    if prediction_type in ["batting", "bowling"]:
+        # Calculate z-scores for y_train
+        z_scores = np.abs((y_train - y_train.mean()) / y_train.std())
+        
+        # Create mask for non-outlier data (z-score <= 2)
+        non_outlier_mask = z_scores <= 2
+        
+        # Filter training data to remove outliers
+        X_train_filtered = X_train[non_outlier_mask]
+        y_train_filtered = y_train[non_outlier_mask]
+        weights_filtered = weights[non_outlier_mask]
+        
+        print(f"\nRemoved {(~non_outlier_mask).sum()} outliers from {prediction_type} training data")
+        print(f"Training set size reduced from {len(y_train)} to {len(y_train_filtered)}")
+        
+        # Create validation set for early stopping
+        val_size = int(0.2 * len(X_train_filtered))
+        X_train_final = X_train_filtered[:-val_size]
+        y_train_final = y_train_filtered[:-val_size]
+        X_val = X_train_filtered[-val_size:]
+        y_val = y_train_filtered[-val_size:]
+        
+        # Use filtered data for training
+        X_train_to_use = X_train_filtered
+        y_train_to_use = y_train_filtered
+        weights_to_use = weights_filtered
+    else:  # For ranking model, use all data
+        # Create validation set for early stopping
+        val_size = int(0.2 * len(X_train))
+        X_train_final = X_train[:-val_size]
+        y_train_final = y_train[:-val_size]
+        X_val = X_train[-val_size:]
+        y_val = y_train[-val_size:]
+        
+        # Use all data for training
+        X_train_to_use = X_train
+        y_train_to_use = y_train
+        weights_to_use = weights
     
     # Task-specific parameters
-    if prediction_type == "batting":
-        params = {
-            'n_estimators': 2500,
-            'max_depth': 4,
-            'learning_rate': 0.003,
-            'subsample': 0.8,
-            'colsample_bytree': 0.8,
-            'min_child_weight': 5,
-            'reg_alpha': 0.3,
-            'reg_lambda': 1.5,
-            'gamma': 0.1
-        }
-    elif prediction_type == "bowling":
-        params = {
-            'n_estimators': 2000,
-            'max_depth': 3,
-            'learning_rate': 0.005,
-            'subsample': 0.7,
-            'colsample_bytree': 0.7,
-            'min_child_weight': 7,
-            'reg_alpha': 0.5,
-            'reg_lambda': 2.0,
-            'gamma': 0.2
-        }
-    else:  # rank prediction
-        params = {
-            'n_estimators': 2500,
-            'max_depth': 3,
-            'learning_rate': 0.01,
-            'subsample': 0.9,
-            'colsample_bytree': 0.9,
-            'min_child_weight': 3,
-            'reg_alpha': 0.1,
-            'reg_lambda': 1.0,
-            'gamma': 0.05
-        }
+    params = {
+        'n_estimators': 500,
+        'max_depth': 5,
+        'learning_rate': 0.003,
+        'subsample': 0.8,
+        'colsample_bytree': 0.8,
+        'min_child_weight': 5,
+        'reg_alpha': 0.3,
+        'reg_lambda': 2.5,
+        'gamma': 0.1
+    }
     
     # Add common parameters
     params.update({
@@ -93,7 +81,7 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
     # Train XGBoost model with task-specific parameters
     xgb_model = xgb.XGBRegressor(**params)
     
-    # Train with early stopping and no weights initially
+    # Train with early stopping
     xgb_model.fit(
         X_train_final, 
         y_train_final,
@@ -112,11 +100,11 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
         random_state=42,
         n_jobs=-1
     )
-    rf_model.fit(X_train, y_train_clamped, sample_weight=weights)
+    rf_model.fit(X_train_to_use, y_train_to_use, sample_weight=weights_to_use)
     
     # Train MLP model with task-specific architecture
     mlp_hidden = (50, 50)  # Larger network for batting
-    mlp_alpha = 0.001  # L2 regularization
+    mlp_alpha = 0.001
     
     mlp_model = MLPRegressor(
         hidden_layer_sizes=mlp_hidden,
@@ -130,58 +118,69 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test, weights, predict
         validation_fraction=0.2,
         random_state=42
     )
-    mlp_model.fit(X_train, y_train_clamped)
+    mlp_model.fit(X_train_to_use, y_train_to_use)
     
-    # Get predictions and clamp them
-    xgb_train_pred = xgb_model.predict(X_train)
-    xgb_train_pred = pd.Series(xgb_train_pred).clip(lower=lower_bound, upper=upper_bound)
+    # Train Ridge model with cross-validation for alpha selection
+    ridge_model = RidgeCV(
+        alphas=np.logspace(-3, 3, 100),
+        cv=5,
+        scoring='r2',
+        fit_intercept=True
+    )
+    ridge_model.fit(X_train_to_use, y_train_to_use, sample_weight=weights_to_use)
+    
+    # Get predictions
+    xgb_train_pred = xgb_model.predict(X_train_to_use)
     xgb_test_pred = xgb_model.predict(X_test)
-    xgb_test_pred = pd.Series(xgb_test_pred).clip(lower=lower_bound, upper=upper_bound)
     
-    rf_train_pred = rf_model.predict(X_train)
-    rf_train_pred = pd.Series(rf_train_pred).clip(lower=lower_bound, upper=upper_bound)
+    rf_train_pred = rf_model.predict(X_train_to_use)
     rf_test_pred = rf_model.predict(X_test)
-    rf_test_pred = pd.Series(rf_test_pred).clip(lower=lower_bound, upper=upper_bound)
     
-    mlp_train_pred = mlp_model.predict(X_train)
-    mlp_train_pred = pd.Series(mlp_train_pred).clip(lower=lower_bound, upper=upper_bound)
+    mlp_train_pred = mlp_model.predict(X_train_to_use)
     mlp_test_pred = mlp_model.predict(X_test)
-    mlp_test_pred = pd.Series(mlp_test_pred).clip(lower=lower_bound, upper=upper_bound)
+    
+    ridge_train_pred = ridge_model.predict(X_train_to_use)
+    ridge_test_pred = ridge_model.predict(X_test)
     
     # Optimize ensemble weights using validation set
     # Use fair weighting scheme instead of R²-based optimization
-    best_weights = {'xgb': 0.33, 'rf': 0.33, 'mlp': 0.33}  # Equal weights for all models
+    best_weights = {'xgb': 0.25, 'rf': 0.25, 'mlp': 0.25, 'ridge': 0.25}  # Equal weights for all models
     
     # Calculate ensemble predictions using fair weights
     ensemble_train_pred = (
         xgb_train_pred * best_weights['xgb'] + 
         rf_train_pred * best_weights['rf'] +
-        mlp_train_pred * best_weights['mlp']
+        mlp_train_pred * best_weights['mlp'] +
+        ridge_train_pred * best_weights['ridge']
     )
     ensemble_test_pred = (
         xgb_test_pred * best_weights['xgb'] + 
         rf_test_pred * best_weights['rf'] +
-        mlp_test_pred * best_weights['mlp']
+        mlp_test_pred * best_weights['mlp'] +
+        ridge_test_pred * best_weights['ridge']
     )
     
     # Calculate and print training and validation scores
-    xgb_train_r2 = r2_score(y_train_clamped, xgb_train_pred)
-    xgb_val_r2 = r2_score(y_test_clamped, xgb_test_pred)
-    rf_train_r2 = r2_score(y_train_clamped, rf_train_pred)
-    rf_val_r2 = r2_score(y_test_clamped, rf_test_pred)
-    mlp_train_r2 = r2_score(y_train_clamped, mlp_train_pred)
-    mlp_val_r2 = r2_score(y_test_clamped, mlp_test_pred)
-    ensemble_train_r2 = r2_score(y_train_clamped, ensemble_train_pred)
-    ensemble_val_r2 = r2_score(y_test_clamped, ensemble_test_pred)
+    xgb_train_r2 = r2_score(y_train_to_use, xgb_train_pred)
+    xgb_val_r2 = r2_score(y_test, xgb_test_pred)
+    rf_train_r2 = r2_score(y_train_to_use, rf_train_pred)
+    rf_val_r2 = r2_score(y_test, rf_test_pred)
+    mlp_train_r2 = r2_score(y_train_to_use, mlp_train_pred)
+    mlp_val_r2 = r2_score(y_test, mlp_test_pred)
+    ridge_train_r2 = r2_score(y_train_to_use, ridge_train_pred)
+    ridge_val_r2 = r2_score(y_test, ridge_test_pred)
+    ensemble_train_r2 = r2_score(y_train_to_use, ensemble_train_pred)
+    ensemble_val_r2 = r2_score(y_test, ensemble_test_pred)
     
     print(f"\n{prediction_type.capitalize()} Model Performance:")
     print(f"XGBoost - Training R²: {xgb_train_r2:.4f}, Validation R²: {xgb_val_r2:.4f}")
     print(f"Random Forest - Training R²: {rf_train_r2:.4f}, Validation R²: {rf_val_r2:.4f}")
     print(f"MLP - Training R²: {mlp_train_r2:.4f}, Validation R²: {mlp_val_r2:.4f}")
+    print(f"Ridge - Training R²: {ridge_train_r2:.4f}, Validation R²: {ridge_val_r2:.4f}")
     print(f"Ensemble - Training R²: {ensemble_train_r2:.4f}, Validation R²: {ensemble_val_r2:.4f}")
-    print(f"Optimal weights - XGBoost: {best_weights['xgb']:.2f}, Random Forest: {best_weights['rf']:.2f}, MLP: {best_weights['mlp']:.2f}")
+    print(f"Optimal weights - XGBoost: {best_weights['xgb']:.2f}, Random Forest: {best_weights['rf']:.2f}, MLP: {best_weights['mlp']:.2f}, Ridge: {best_weights['ridge']:.2f}")
     
-    return xgb_model, rf_model, mlp_model, xgb_test_pred, rf_test_pred, mlp_test_pred, ensemble_test_pred
+    return xgb_model, rf_model, mlp_model, ridge_model, xgb_test_pred, rf_test_pred, mlp_test_pred, ridge_test_pred, ensemble_test_pred
 
 def calculate_captain_score(features_df, batting_pred, bowling_pred):
     """
@@ -323,17 +322,17 @@ def main():
     weights = weights / weights.sum()
     
     # Train and evaluate batting models
-    batting_xgb, batting_rf, batting_mlp, batting_xgb_pred, batting_rf_pred, batting_mlp_pred, batting_ensemble_pred = train_and_evaluate_models(
+    batting_xgb, batting_rf, batting_mlp, batting_ridge, batting_xgb_pred, batting_rf_pred, batting_mlp_pred, batting_ridge_pred, batting_ensemble_pred = train_and_evaluate_models(
         X_train, y_train_batting, X_val, y_val_batting, weights, "batting"
     )
     
     # Train and evaluate bowling models
-    bowling_xgb, bowling_rf, bowling_mlp, bowling_xgb_pred, bowling_rf_pred, bowling_mlp_pred, bowling_ensemble_pred = train_and_evaluate_models(
+    bowling_xgb, bowling_rf, bowling_mlp, bowling_ridge, bowling_xgb_pred, bowling_rf_pred, bowling_mlp_pred, bowling_ridge_pred, bowling_ensemble_pred = train_and_evaluate_models(
         X_train, y_train_bowling, X_val, y_val_bowling, weights, "bowling"
     )
     
     # Train and evaluate rank prediction models
-    rank_xgb, rank_rf, rank_mlp, rank_xgb_pred, rank_rf_pred, rank_mlp_pred, rank_ensemble_pred = train_and_evaluate_models(
+    rank_xgb, rank_rf, rank_mlp, rank_ridge, rank_xgb_pred, rank_rf_pred, rank_mlp_pred, rank_ridge_pred, rank_ensemble_pred = train_and_evaluate_models(
         X_train, train_data['match_rank'], X_val, validation_matches['match_rank'], weights, "rank"
     )
     
@@ -359,7 +358,13 @@ def main():
     
     # Print feature importance for each model
     def print_feature_importance(model, feature_names, model_name):
-        importance = model.feature_importances_
+        if hasattr(model, 'feature_importances_'):
+            importance = model.feature_importances_
+        elif hasattr(model, 'coef_'):
+            importance = np.abs(model.coef_)
+        else:
+            return
+            
         importance_df = pd.DataFrame({
             'feature': feature_names,
             'importance': importance
@@ -370,13 +375,16 @@ def main():
     
     print_feature_importance(batting_xgb, X_train.columns, "Batting XGBoost")
     print_feature_importance(batting_rf, X_train.columns, "Batting Random Forest")
+    print_feature_importance(batting_ridge, X_train.columns, "Batting Ridge")
     print_feature_importance(bowling_xgb, X_train.columns, "Bowling XGBoost")
     print_feature_importance(bowling_rf, X_train.columns, "Bowling Random Forest")
+    print_feature_importance(bowling_ridge, X_train.columns, "Bowling Ridge")
     print_feature_importance(rank_xgb, X_train.columns, "Rank XGBoost")
     print_feature_importance(rank_rf, X_train.columns, "Rank Random Forest")
+    print_feature_importance(rank_ridge, X_train.columns, "Rank Ridge")
     
     # Create summary tables
-    def create_summary_table(actuals, xgb_pred, rf_pred, mlp_pred, ensemble_pred, score_type):
+    def create_summary_table(actuals, xgb_pred, rf_pred, mlp_pred, ridge_pred, ensemble_pred, score_type):
         results = []
         
         # Calculate metrics for XGBoost
@@ -397,6 +405,12 @@ def main():
         mlp_mae = np.mean(np.abs(np.array(actuals) - np.array(mlp_pred)))
         mlp_r2 = r2_score(actuals, mlp_pred)
         
+        # Calculate metrics for Ridge
+        ridge_mse = mean_squared_error(actuals, ridge_pred)
+        ridge_rmse = np.sqrt(ridge_mse)
+        ridge_mae = np.mean(np.abs(np.array(actuals) - np.array(ridge_pred)))
+        ridge_r2 = r2_score(actuals, ridge_pred)
+        
         # Calculate metrics for Ensemble
         ensemble_mse = mean_squared_error(actuals, ensemble_pred)
         ensemble_rmse = np.sqrt(ensemble_mse)
@@ -408,6 +422,7 @@ def main():
         xgb_pred_array = np.array(xgb_pred)
         rf_pred_array = np.array(rf_pred)
         mlp_pred_array = np.array(mlp_pred)
+        ridge_pred_array = np.array(ridge_pred)
         ensemble_pred_array = np.array(ensemble_pred)
         non_zero_mask = actuals_array != 0
         
@@ -415,11 +430,13 @@ def main():
             xgb_mape = np.mean(np.abs((actuals_array[non_zero_mask] - xgb_pred_array[non_zero_mask]) / actuals_array[non_zero_mask])) * 100
             rf_mape = np.mean(np.abs((actuals_array[non_zero_mask] - rf_pred_array[non_zero_mask]) / actuals_array[non_zero_mask])) * 100
             mlp_mape = np.mean(np.abs((actuals_array[non_zero_mask] - mlp_pred_array[non_zero_mask]) / actuals_array[non_zero_mask])) * 100
+            ridge_mape = np.mean(np.abs((actuals_array[non_zero_mask] - ridge_pred_array[non_zero_mask]) / actuals_array[non_zero_mask])) * 100
             ensemble_mape = np.mean(np.abs((actuals_array[non_zero_mask] - ensemble_pred_array[non_zero_mask]) / actuals_array[non_zero_mask])) * 100
         else:
             xgb_mape = 0
             rf_mape = 0
             mlp_mape = 0
+            ridge_mape = 0
             ensemble_mape = 0
         
         results.append({
@@ -450,6 +467,15 @@ def main():
         })
         
         results.append({
+            'Model': 'Ridge',
+            'MSE': f"{ridge_mse:.2f}",
+            'RMSE': f"{ridge_rmse:.2f}",
+            'MAE': f"{ridge_mae:.2f}",
+            'MAPE': f"{ridge_mape:.2f}%",
+            'R²': f"{ridge_r2:.4f}"
+        })
+        
+        results.append({
             'Model': 'Ensemble',
             'MSE': f"{ensemble_mse:.2f}",
             'RMSE': f"{ensemble_rmse:.2f}",
@@ -463,9 +489,9 @@ def main():
         return df
     
     # Create summary tables for both batting and bowling
-    batting_summary = create_summary_table(y_val_batting, batting_xgb_pred, batting_rf_pred, batting_mlp_pred, batting_ensemble_pred, "batting")
-    bowling_summary = create_summary_table(y_val_bowling, bowling_xgb_pred, bowling_rf_pred, bowling_mlp_pred, bowling_ensemble_pred, "bowling")
-    rank_summary = create_summary_table(validation_matches['match_rank'], rank_xgb_pred, rank_rf_pred, rank_mlp_pred, rank_ensemble_pred, "rank")
+    batting_summary = create_summary_table(y_val_batting, batting_xgb_pred, batting_rf_pred, batting_mlp_pred, batting_ridge_pred, batting_ensemble_pred, "batting")
+    bowling_summary = create_summary_table(y_val_bowling, bowling_xgb_pred, bowling_rf_pred, bowling_mlp_pred, bowling_ridge_pred, bowling_ensemble_pred, "bowling")
+    rank_summary = create_summary_table(validation_matches['match_rank'], rank_xgb_pred, rank_rf_pred, rank_mlp_pred, rank_ridge_pred, rank_ensemble_pred, "rank")
     
     # Print summary tables
     print("\nModel Performance Summary:\n")
@@ -511,6 +537,14 @@ def main():
         pickle.dump(bowling_mlp, f)
     with open('models/rank_mlp_model.pkl', 'wb') as f:
         pickle.dump(rank_mlp, f)
+    
+    # Save Ridge models
+    with open('models/batting_ridge_model.pkl', 'wb') as f:
+        pickle.dump(batting_ridge, f)
+    with open('models/bowling_ridge_model.pkl', 'wb') as f:
+        pickle.dump(bowling_ridge, f)
+    with open('models/rank_ridge_model.pkl', 'wb') as f:
+        pickle.dump(rank_ridge, f)
     
     # Save captain model
     with open('models/captain_rf_model.pkl', 'wb') as f:

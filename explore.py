@@ -141,7 +141,10 @@ def create_features_from_scratch(deliveries_df, cache_file):
     
     # Create features based on past performance
     features_df = []
-    
+
+    # Create total venue stats
+    venue_features_df = create_venue_stats(player_df)
+
     for player in player_df['player'].unique():
         try:
             player_matches = player_df[player_df['player'] == player].copy()
@@ -171,10 +174,12 @@ def create_features_from_scratch(deliveries_df, cache_file):
                     opposition_avg_score = opposition_matches['total_score'].mean() if len(opposition_matches) > 0 else past_matches['total_score'].mean()
                     opposition_std_score = opposition_matches['total_score'].std() if len(opposition_matches) > 1 else past_matches['total_score'].std()
 
-                    total_venue_matches = player_df[(player_df['venue'] == current_venue) & (player_df['date'] < current_date)]
+                    total_venue_matches = venue_features_df[(venue_features_df['venue'] == current_venue) & (venue_features_df['date'] < current_date)]
                     # remove 0 values from batting score 
-                    total_venue_batting_avg = total_venue_matches[total_venue_matches['batting_score'] > 0]['batting_score'].mean() 
-                    total_venue_bowling_avg = total_venue_matches[total_venue_matches['bowling_score'] > 0]['bowling_score'].mean() 
+                    total_venue_batting_avg_first_innings = total_venue_matches['batting_score_first_innings'].mean()
+                    total_venue_bowling_avg_first_innings = total_venue_matches['bowling_score_first_innings'].mean()
+                    total_venue_batting_avg_second_innings = total_venue_matches['batting_score_second_innings'].mean()
+                    total_venue_bowling_avg_second_innings = total_venue_matches['bowling_score_second_innings'].mean()
 
                     # Calculate innings-specific batting and bowling averages
                     first_innings_batting = past_matches[
@@ -332,7 +337,7 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         'match_id': current_match['match_id'].iloc[0],
                         'date': current_match['date'].iloc[0],
                         'season': year,
-                        'match_number': int(current_match['match_id']) %  year,
+                        'match_number': int(current_match['match_id'].iloc[0]) %  year,
                         'team': current_match['team'].iloc[0],
                         'opposition': current_match['opposition'].iloc[0],
                         'venue': current_venue,
@@ -344,6 +349,9 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         'weighted_avg_score': weighted_avg_score,
                         'num_matches': len(past_matches),
                         'recent_score': recent_5_matches['total_score'].mean(),
+
+                        'batting_innings': current_match['batting_innings'].iloc[0],
+                        'bowling_innings': current_match['bowling_innings'].iloc[0],
                         
                         # Venue-specific features
                         'venue_avg_score': venue_avg_score,
@@ -412,8 +420,10 @@ def create_features_from_scratch(deliveries_df, cache_file):
                         'top_11_count_last_5': sum(1 for rank in past_match_ranks if rank <= 11) if past_match_ranks else 0,
 
                         #total venue stats 
-                        'total_venue_batting_avg': total_venue_batting_avg,
-                        'total_venue_bowling_avg': total_venue_bowling_avg,
+                        'total_venue_batting_avg_first_innings': total_venue_batting_avg_first_innings,
+                        'total_venue_bowling_avg_first_innings': total_venue_bowling_avg_first_innings,
+                        'total_venue_batting_avg_second_innings': total_venue_batting_avg_second_innings,
+                        'total_venue_bowling_avg_second_innings': total_venue_bowling_avg_second_innings,
                     }
                     
                     # Add team composition features
@@ -580,6 +590,40 @@ def calculate_player_correlation_features(player_data, team_players_data):
         'role_complementarity': role_complementarity,
         'batting_position_impact': batting_position_impact
     }
+
+def create_venue_stats(player_df):
+    """
+    Create venue stats for each venue in the dataframe
+    """
+    venue_features_df = pd.DataFrame()
+
+    for match_id in player_df['match_id'].unique():
+        match_data = player_df[player_df['match_id'] == match_id]
+        venue = match_data['venue'].iloc[0]
+        batting_score_first_innings = match_data[match_data['batting_innings'] == 1]['batting_score'].sum()
+        batting_score_second_innings = match_data[match_data['batting_innings'] == 2]['batting_score'].sum()
+        bowling_score_first_innings = match_data[match_data['bowling_innings'] == 1]['bowling_score'].sum()
+        bowling_score_second_innings = match_data[match_data['bowling_innings'] == 2]['bowling_score'].sum()
+
+        # Create a new row as a list of dictionaries
+        new_row_data = [{
+            'venue': venue,
+            'date': match_data['date'].iloc[0],
+            'batting_score_first_innings': batting_score_first_innings,
+            'batting_score_second_innings': batting_score_second_innings,
+            'bowling_score_first_innings': bowling_score_first_innings,
+            'bowling_score_second_innings': bowling_score_second_innings
+        }]
+
+        # Create DataFrame from the list of dictionaries
+        new_row_df = pd.DataFrame(new_row_data)
+        
+        # Concatenate with existing DataFrame
+        venue_features_df = pd.concat([venue_features_df, new_row_df], ignore_index=True)
+
+    venue_features_df.to_csv('venue_features.csv', index=False)
+    return venue_features_df
+
 
 def main():
     # Create dataset
