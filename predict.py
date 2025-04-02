@@ -81,10 +81,17 @@ class MatchPredictor:
         features = player_history.iloc[-1].to_dict()
 
         current_match = match_data[match_data['match_id'] == match_id].iloc[0]
-        venue_features = player_history[player_history['venue'] == current_match['venue']]
+        venue_features = features_df[(features_df['venue'] == current_match['venue']) & (features_df['date'] < current_match['date'])]
 
         if len(venue_features) > 0:
-            features.update(venue_features.iloc[-1].to_dict())
+            venue_features = venue_features.iloc[-1].to_dict()
+            features.update({
+                'total_venue_batting_avg_first_innings': venue_features['total_venue_batting_avg_first_innings'],
+                'total_venue_bowling_avg_first_innings': venue_features['total_venue_bowling_avg_first_innings'],
+                'total_venue_batting_avg_second_innings': venue_features['total_venue_batting_avg_second_innings'],
+                'total_venue_bowling_avg_second_innings': venue_features['total_venue_bowling_avg_second_innings']
+            })
+
 
         # Determine which team the player belongs to
         player_team = None
@@ -312,6 +319,10 @@ class MatchPredictor:
                 missing_df = pd.DataFrame(0, index=X.index, columns=list(missing_cols))
                 # Concatenate with existing data
                 X = pd.concat([X, missing_df], axis=1)
+
+            #print nan columns
+            print("NAN columns: ", X.columns[X.isna().any()].tolist())
+
             
             # Reorder columns to match training data
             X = X[self.feature_names]
