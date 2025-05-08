@@ -1,0 +1,32 @@
+teams:
+  team1: "MI"
+  team2: "RCB"
+  batting_first: "RCB"
+  venue: "Wankhede Stadium, Mumbai"
+
+playing_11:
+  team1:
+    - "Will Jacks"
+    - "Ryan Rickelton"
+    - "Suryakumar Yadav"
+    - "Tilak Varma"
+    - "Hardik Pandya"
+    - "Naman Dhir"
+    - "Mitchell Santner"
+    - "Deepak Chahar"
+    - "Trent Boult"
+    - "Jasprit Bumrah"
+    - "Vignesh Puthur"
+    
+  team2:
+    - "Philip Salt"
+    - "Virat Kohli"
+    - "Devdutt Padikkal"
+    - "Rajat Patidar"
+    - "Liam Livingstone"
+    - "Jitesh Sharma"
+    - "Tim David"
+    - "Krunal Pandya"
+    - "Bhuvneshwar Kumar"
+    - "Josh Hazlewood"
+    - "Yash Dayal"

@@ -1,0 +1,35 @@
+teams:
+  team1: "RR"
+  team2: "PBKS"
+  batting_first: "RR"
+  venue: "Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, Chandigarh"
+
+playing_11:
+  team1:
+    - "Yashasvi Jaiswal"
+    - "Sanju Samson"
+    - "Nitish Rana"
+    - "Riyan Parag"
+    - "Dhruv Jurel"
+    - "Shimron Hetmyer"
+    - "Wanindu Hasaranga"
+    - "Jofra Archer"
+    - "Maheesh Theekshana"
+    - "Sandeep Sharma"
+    - "Tushar Deshpande"
+    - "Kumar Kartikeya"
+    
+  team2:
+    - "Priyansh Arya"
+    - "Prabhsimran Singh"
+    - "Shreyas Iyer"
+    - "Shashank Singh"
+    - "Marcus Stoinis"
+    - "Glenn Maxwell"
+    - "Suryansh Shedge"
+    - "Marco Jansen"
+    - "Lockie Ferguson"
+    - "Yuzvendra Chahal"
+    - "Arshdeep Singh"
+    - "Nehal Wadhera"
+    - "Harpreet Brar"

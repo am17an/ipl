@@ -1,0 +1,32 @@
+teams:
+  team1: "GT"
+  team2: "SRH"
+  batting_first: "SRH"
+  venue: "Rajiv Gandhi International Stadium, Hyderabad"
+
+playing_11:
+  team1:
+    - "Travis Head"
+    - "Abhishek Sharma"
+    - "Ishan Kishan"
+    - "Nitish Kumar Reddy"
+    - "Kamindu Mendis"
+    - "Heinrich Klaasen"
+    - "Aniket Verma"
+    - "Pat Cummins"
+    - "Zeeshan Ansari"
+    - "Jaydev Unadkat"
+    - "Mohammed Shami"
+    
+  team2:
+    - "Sai Sudharsan"
+    - "Shubman Gill"
+    - "Jos Buttler"
+    - "Shahrukh Khan"
+    - "Rahul Tewatia"
+    - "Washington Sundar"
+    - "Rashid Khan"
+    - "R Sai Kishore"
+    - "Mohammed Siraj"
+    - "Prasidh Krishna"
+    - "Ishant Sharma"

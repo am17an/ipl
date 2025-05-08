@@ -12,7 +12,7 @@ from kagglehub import KaggleDatasetAdapter
 from IPLScorer import IPLFantasyScorer
 from feature_utils import get_numeric_features, get_categorical_features, zero_variance_features_check
 
-def create_player_dataset(file_pattern="ipl_{season}_deliveries.csv", cache_file="player_matches.csv"):
+def create_player_dataset(file_pattern="ipl_{season}_deliveries.csv"):
     """
     Create a dataset from multiple IPL seasons
     """
@@ -49,22 +49,9 @@ def create_player_dataset(file_pattern="ipl_{season}_deliveries.csv", cache_file
         print(f"Sample of dates: {df['date'].head()}")
 
         all_seasons_df = pd.concat([all_seasons_df, df])
+    
+    all_seasons_df['date'] = pd.to_datetime(all_seasons_df['date'], format='%b %d, %Y', errors='coerce')
 
-    
-    print(f"\nTotal rows loaded: {len(all_seasons_df)}")
-    # Convert date strings to datetime objects
-    try:
-        all_seasons_df['date'] = pd.to_datetime(all_seasons_df['date'], format='%b %d, %Y', errors='coerce')
-        print(f"Date range: {all_seasons_df['date'].min()} to {all_seasons_df['date'].max()}")
-        
-        # Save to cache file
-        print(f"\nSaving dataset to {cache_file}...")
-        all_seasons_df.to_csv(cache_file, index=False)
-        print("Dataset saved successfully")
-    except Exception as e:
-        print(f"Error converting dates or saving cache: {str(e)}")
-        print("Sample of date values:", all_seasons_df['date'].head())
-    
     return all_seasons_df
 
 def create_features_and_train_test_split(deliveries_df, cache_file="features_df.csv"):
@@ -149,9 +136,6 @@ def create_features_from_scratch(deliveries_df, cache_file):
         try:
             player_matches = player_df[player_df['player'] == player].copy()
             
-            if len(player_matches) < 3:
-                continue
-            
             # For each match, create features based on past matches only
             for i in range(1, len(player_matches)):
                 try:
@@ -160,6 +144,9 @@ def create_features_from_scratch(deliveries_df, cache_file):
                     
                     # Get past matches by comparing datetime objects
                     past_matches = player_matches[pd.to_datetime(player_matches['date']) < current_date]
+
+                    if len(past_matches) == 0:
+                        continue
                     
                     current_venue = current_match['venue'].iloc[0]
                     current_opposition = current_match['opposition'].iloc[0]
@@ -604,7 +591,7 @@ def create_venue_stats(player_df):
         # Create a new row as a list of dictionaries
         new_row_data = [{
             'venue': venue,
-            'date': match_data['date'].iloc[0],
+            'date': pd.to_datetime(match_data['date'].iloc[0]),
             'batting_score_first_innings': batting_score_first_innings,
             'batting_score_second_innings': batting_score_second_innings,
             'bowling_score_first_innings': bowling_score_first_innings,
@@ -636,8 +623,11 @@ def main():
         return
         
     print(f"\nFound {len(features_df)} total matches")
-    print(f"Unique players: {features_df['player'].nunique()}")
+    print(f"Unique players: {features_df['player'].unique()}")
     print(f"Date range: {features_df['date'].min()} to {features_df['date'].max()}")
+
+
+    
     
     # Get the last matches for evaluation
     evaluation_matches = features_df.tail(30)

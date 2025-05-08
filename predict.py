@@ -75,7 +75,7 @@ class MatchPredictor:
         player_history = features_df[features_df['player'] == player].copy()
         
         if len(player_history) == 0:
-            raise ValueError(f"No historical data found for player {player}")
+            return None
         
         # Get the most recent features for this player
         features = player_history.iloc[-1].to_dict()
@@ -191,6 +191,7 @@ class MatchPredictor:
             
             # Create feature vector
             feature_vector = pd.DataFrame([features])
+
             
             # Create dummy variables for categorical features (excluding 'player')
             categorical_features = [col for col in self.categorical_features if col != 'player']
@@ -219,6 +220,7 @@ class MatchPredictor:
             #print all the columns which contains NaNs
             # Get columns containing NaN values
             cols_with_nan = X.columns[X.isna().any()].tolist()
+
 
             # Print the column names with NaN values
             # Optional: Print the count of NaN values in each column
