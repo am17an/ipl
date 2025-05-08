@@ -7,4 +7,4 @@
 2. `python train_models.py` - should create models
 3. `python predict.py --config match_config.yaml` - checkout some examples in `matches/` for the format
 
-Provided without any warranties, please don't contact in case it doesn't work on your computer. Enjoy!
+Provided without any warranties, please don't contact me in case it doesn't work on your computer. Enjoy!
